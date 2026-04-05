@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>思い出メモ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f7f5f0;
+  --white: #ffffff;
+  --surface2: #f0ede8;
+  --border: #e2ddd6;
+  --border2: #ccc7be;
+  --text: #2a2520;
+  --text2: #7a7060;
+  --text3: #b0a898;
+  --movie: #e8643a;
+  --movie-bg: #fff5f2;
+  --movie-border: #fdd5c3;
+  --place: #2d9cdb;
+  --place-bg: #eaf5ff;
+  --place-border: #bee2f8;
+  --rest: #27ae60;
+  --rest-bg: #edfaf3;
+  --rest-border: #b8edce;
+  --pref: #7c5cbf;
+  --pref-bg: #f3f0ff;
+  --pref-border: #d4c8fc;
+  --gold: #f59e0b;
+  --chain: #0891b2;
+  --chain-bg: #ecfeff;
+  --chain-border: #a5f3fc;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; min-height: 100vh; font-size: 14px; line-height: 1.6; }
+
+/* HEADER */
+header { background: var(--white); border-bottom: 1.5px solid var(--border); position: sticky; top: 0; z-index: 200; }
+.header-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; height: 58px; padding: 0 20px; gap: 0; }
+.logo { font-family: 'Noto Serif JP', serif; font-size: 17px; font-weight: 900; color: var(--movie); margin-right: 28px; white-space: nowrap; flex-shrink: 0; }
+.nav-tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; background: transparent; color: var(--text2); transition: all 0.15s; }
+.nav-tab:hover { background: var(--surface2); color: var(--text); }
+.nav-tab.active { background: var(--surface2); color: var(--tab-c); font-weight: 700; }
+.tab-badge { font-size: 11px; padding: 1px 7px; border-radius: 20px; background: var(--surface2); color: var(--text3); font-weight: 400; }
+.nav-tab.active .tab-badge { background: var(--tab-c); color: #fff; }
+
+/* MAIN */
+main { max-width: 1280px; margin: 0 auto; padding: 28px 20px; }
+.panel { display: none; }
+.panel.active { display: block; animation: fadeUp 0.25s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* PAGE HEADER */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+.page-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+.page-title-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.page-meta { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+/* TOOLBAR */
+.toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.search-wrap { position: relative; flex: 1; min-width: 180px; }
+.search-wrap input { width: 100%; background: var(--white); border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 12px 9px 36px; color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 13px; outline: none; transition: border-color 0.15s; }
+.search-wrap input:focus { border-color: var(--panel-c, var(--movie)); }
+.search-wrap input::placeholder { color: var(--text3); }
+.search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 15px; pointer-events: none; }
+select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--white); font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: var(--text); cursor: pointer; outline: none; }
+
+/* TAG FILTERS */
+.tag-filter-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.tag-filter-label { font-size: 12px; color: var(--text2); font-weight: 700; margin-right: 2px; }
+.tag-filter-btn { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
+.tag-filter-btn:hover { border-color: var(--movie); color: var(--movie); }
+.tag-filter-btn.active { background: var(--movie); border-color: var(--movie); color: #fff; font-weight: 700; }
+
+/* CARDS GRID */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.movie-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; transition: all 0.15s; cursor: default; position: relative; }
+.movie-card:hover { border-color: var(--movie-border); box-shadow: 0 4px 14px rgba(232,100,58,0.1); transform: translateY(-1px); }
+.card-title { font-size: 14px; font-weight: 700; line-height: 1.4; margin-bottom: 8px; color: var(--text); padding-right: 40px; }
+.card-series-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: #fce4ec; color: #b5174a; margin-bottom: 6px; }
+.stars { display: flex; gap: 2px; margin-bottom: 6px; }
+.star { font-size: 16px; cursor: pointer; transition: transform 0.1s; color: #e0d8cf; user-select: none; }
+.star.lit { color: var(--gold); }
+.star:hover { transform: scale(1.25); }
+.card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.tag-chip { font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.tag-chip:hover { opacity: 0.8; }
+.card-memo { font-size: 12px; color: var(--text2); margin-top: 6px; line-height: 1.5; font-style: italic; }
+.no-results { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text3); }
+
+/* CARD ACTION BUTTONS */
+.card-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; z-index: 2; }
+.movie-card:hover .card-actions,
+.item-card:hover .card-actions { opacity: 1; }
+.card-action-btn { width: 26px; height: 26px; border-radius: 6px; border: 1.5px solid var(--border); background: rgba(255,255,255,0.92); backdrop-filter: blur(4px); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; color: var(--text2); transition: all 0.1s; }
+.card-action-btn:hover { background: var(--surface2); }
+.card-action-btn.del:hover { background: #fff0ee; border-color: #f87171; color: #dc2626; }
+.card-action-btn.edit:hover { background: var(--movie-bg); border-color: var(--movie); color: var(--movie); }
+
+/* ADD BUTTON */
+.add-btn { display: flex; align-items: center; gap: 6px; padding: 9px 20px; border-radius: 8px; background: var(--movie); color: #fff; border: none; cursor: pointer; font-size: 13px; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; transition: all 0.15s; white-space: nowrap; }
+.add-btn:hover { filter: brightness(0.88); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.add-btn.place-btn { background: var(--place); }
+.add-btn.rest-btn { background: var(--rest); }
+
+/* ITEM CARDS */
+.item-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; transition: all 0.15s; position: relative; display: flex; flex-direction: column; }
+.item-card:hover { border-color: var(--panel-c, #888); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.09); }
+.item-thumb { width: 100%; height: 110px; object-fit: cover; display: block; background: var(--surface2); flex-shrink: 0; }
+.item-thumb-placeholder { width: 100%; height: 110px; display: flex; align-items: center; justify-content: center; background: var(--surface2); flex-shrink: 0; cursor: pointer; transition: background 0.15s; position: relative; overflow: hidden; }
+.item-thumb-placeholder:hover { background: var(--border); }
+.item-thumb-placeholder-label { font-size: 11px; color: var(--text3); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
+.item-thumb-placeholder-label span { font-size: 20px; }
+.item-body { padding: 11px 13px 12px; flex: 1; }
+.item-name { font-size: 13px; font-weight: 700; line-height: 1.45; color: var(--text); padding-right: 38px; }
+.item-sub { font-size: 11px; color: var(--text2); margin-top: 5px; display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.chain-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: var(--chain-bg); color: var(--chain); border: 1px solid var(--chain-border); }
+.pref-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: var(--pref-bg); color: var(--pref); border: 1px solid var(--pref-border); }
+/* hidden file input for image upload */
+.img-file-input { display: none; }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(42,37,32,0.45); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--white); border-radius: 16px; padding: 28px; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.18); animation: modalIn 0.2s ease; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+.form-group { margin-bottom: 15px; }
+.form-label { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 6px; display: block; letter-spacing: 0.05em; }
+.form-input { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; color: var(--text); background: var(--white); outline: none; }
+.form-input:focus { border-color: var(--focus-c, var(--movie)); }
+.star-select { display: flex; gap: 4px; margin-top: 4px; }
+.star-select .star { font-size: 26px; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.btn-cancel { padding: 9px 20px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--white); color: var(--text2); cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 700; }
+.btn-cancel:hover { background: var(--surface2); }
+.btn-save { padding: 9px 20px; border-radius: 8px; background: var(--modal-save-c, var(--movie)); color: #fff; border: none; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 700; }
+.btn-save:hover { filter: brightness(0.88); }
+.tag-manager { margin-top: 6px; }
+.tag-list-modal { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; min-height: 28px; }
+.tag-removable { display: flex; align-items: center; gap: 4px; font-size: 12px; padding: 3px 8px; border-radius: 20px; font-weight: 700; cursor: pointer; transition: opacity 0.1s; }
+.tag-removable:hover { opacity: 0.7; }
+.tag-input-row { display: flex; gap: 6px; }
+.tag-input-row input { flex: 1; padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-family: 'Noto Sans JP', sans-serif; font-size: 13px; outline: none; }
+.tag-input-row input:focus { border-color: var(--modal-save-c, var(--movie)); }
+.tag-add-btn { padding: 7px 12px; border-radius: 6px; background: var(--surface2); border: 1.5px solid var(--border); cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text2); }
+.tag-add-btn:hover { background: var(--border); }
+.series-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.toggle-box { width: 20px; height: 20px; border-radius: 5px; border: 2px solid var(--border2); display: flex; align-items: center; justify-content: center; transition: all 0.15s; font-size: 12px; color: transparent; }
+.toggle-box.checked { background: #b5174a; border-color: #b5174a; color: #fff; }
+.toggle-box.checked-chain { background: var(--chain); border-color: var(--chain); color: #fff; }
+.series-input-wrap { display: none; margin-top: 8px; }
+.series-input-wrap.show { display: block; }
+.hint-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.hint-tag { padding: 3px 9px; border-radius: 20px; font-size: 11px; border: 1.5px solid var(--border); cursor: pointer; color: var(--text2); background: var(--white); font-family: 'Noto Sans JP', sans-serif; }
+.hint-tag:hover { background: var(--surface2); color: var(--text); }
+.form-select { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; color: var(--text); background: var(--white); outline: none; cursor: pointer; }
+.form-select:focus { border-color: var(--focus-c, var(--movie)); }
+
+/* CHAIN FILTER */
+.rest-filter-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.rest-filter-btn { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
+.rest-filter-btn:hover { border-color: var(--rest); color: var(--rest); }
+.rest-filter-btn.active { background: var(--rest); border-color: var(--rest); color: #fff; font-weight: 700; }
+.rest-filter-btn.chain-active { background: var(--chain); border-color: var(--chain); color: #fff; font-weight: 700; }
+
+/* PREFECTURE */
+.pref-layout { display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; }
+@media (max-width: 860px) { .pref-layout { grid-template-columns: 1fr; } }
+.map-container { background: var(--white); border: 1.5px solid var(--border); border-radius: 16px; padding: 20px; }
+.map-container svg { width: 100%; height: auto; display: block; }
+.pref-rect { fill: var(--pref-bg); stroke: var(--bg); stroke-width: 1.5; cursor: pointer; transition: fill 0.2s; }
+.pref-rect:hover { fill: #d4c8fc; }
+.pref-rect.visited { fill: var(--pref); }
+.pref-rect.visited:hover { fill: #6340ae; }
+.pref-label { pointer-events: none; }
+.map-legend { display: flex; gap: 16px; margin-top: 10px; justify-content: center; font-size: 12px; color: var(--text2); align-items: center; }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: middle; }
+.pref-stats-panel { position: sticky; top: 76px; }
+.stat-box { background: var(--white); border: 1.5px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 14px; }
+.stat-box h3 { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: var(--text3); margin-bottom: 8px; text-transform: uppercase; }
+.big-num { font-family: 'Noto Serif JP', serif; font-size: 48px; font-weight: 900; color: var(--pref); line-height: 1; }
+.big-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.progress-bar { height: 8px; background: var(--pref-bg); border-radius: 4px; margin-top: 12px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--pref); border-radius: 4px; transition: width 0.6s cubic-bezier(0.16,1,0.3,1); }
+.region-section { margin-bottom: 14px; }
+.region-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; margin-bottom: 6px; }
+.region-prefs { display: flex; flex-wrap: wrap; gap: 5px; }
+.pref-check-btn { padding: 4px 9px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; font-weight: 500; }
+.pref-check-btn:hover { border-color: var(--pref); color: var(--pref); }
+.pref-check-btn.visited { background: var(--pref-bg); border-color: var(--pref-border); color: var(--pref); font-weight: 700; }
+.pref-tooltip { position: fixed; background: #2a2520; color: #fff; padding: 5px 11px; border-radius: 6px; font-size: 12px; font-weight: 700; pointer-events: none; z-index: 500; display: none; }
+.pref-tooltip.show { display: block; }
+
+/* PLACE FILTER */
+.place-filter-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.place-filter-btn { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
+.place-filter-btn:hover { border-color: var(--place); color: var(--place); }
+.place-filter-btn.active { background: var(--place); border-color: var(--place); color: #fff; font-weight: 700; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="pref-tooltip" id="pref-tooltip"></div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">🎬 思い出メモ</div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-panel="movies-panel" style="--tab-c: var(--movie)" onclick="switchTab(this)">
+        <span>🎬</span>映画
+        <span class="tab-badge" id="cnt-movies">0</span>
+      </button>
+      <button class="nav-tab" data-panel="places-panel" style="--tab-c: var(--place)" onclick="switchTab(this)">
+        <span>📍</span>スポット
+        <span class="tab-badge" id="cnt-places">0</span>
+      </button>
+      <button class="nav-tab" data-panel="rest-panel" style="--tab-c: var(--rest)" onclick="switchTab(this)">
+        <span>🍽️</span>飲食店
+        <span class="tab-badge" id="cnt-rest">0</span>
+      </button>
+      <button class="nav-tab" data-panel="pref-panel" style="--tab-c: var(--pref)" onclick="switchTab(this)">
+        <span>🗾</span>都道府県
+        <span class="tab-badge" id="cnt-pref">0</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- MOVIES -->
+<section id="movies-panel" class="panel active" style="--panel-c: var(--movie)">
+  <div class="page-header">
+    <div>
+      <div class="page-title">
+        <div class="page-title-icon" style="background:var(--movie-bg)">🎬</div>
+        映画・シリーズ
+      </div>
+      <div class="page-meta" id="movie-meta"></div>
+    </div>
+    <button class="add-btn" onclick="openMovieModal()">＋ 映画を追加</button>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="タイトルで検索…" oninput="renderMovies()">
+    </div>
+    <select class="sort-sel" onchange="renderMovies()" id="movie-sort">
+      <option value="title">タイトル順</option>
+      <option value="rating">評価順</option>
+      <option value="added">追加順</option>
+    </select>
+  </div>
+  <div class="tag-filter-wrap" id="tag-filters"></div>
+  <div class="cards-grid" id="movies-grid"></div>
+</section>
+
+<!-- PLACES -->
+<section id="places-panel" class="panel" style="--panel-c: var(--place)">
+  <div class="page-header">
+    <div>
+      <div class="page-title"><div class="page-title-icon" style="background:var(--place-bg)">📍</div>訪問スポット</div>
+      <div class="page-meta" id="places-meta"></div>
+    </div>
+    <button class="add-btn place-btn" onclick="openPlaceModal()">＋ スポットを追加</button>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="スポット名・都道府県で検索…" oninput="renderPlaces()">
+    </div>
+    <select class="sort-sel" onchange="renderPlaces()" id="place-sort">
+      <option value="added">追加順</option>
+      <option value="name">名前順</option>
+      <option value="pref">都道府県順</option>
+    </select>
+  </div>
+  <div class="place-filter-wrap" id="place-pref-filters"></div>
+  <div class="cards-grid" id="places-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
+</section>
+
+<!-- RESTAURANTS -->
+<section id="rest-panel" class="panel" style="--panel-c: var(--rest)">
+  <div class="page-header">
+    <div>
+      <div class="page-title"><div class="page-title-icon" style="background:var(--rest-bg)">🍽️</div>飲食店</div>
+      <div class="page-meta" id="rest-meta"></div>
+    </div>
+    <button class="add-btn rest-btn" onclick="openRestModal()">＋ 飲食店を追加</button>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="店名で検索…" oninput="renderRest()">
+    </div>
+    <select class="sort-sel" onchange="renderRest()" id="rest-sort">
+      <option value="added">追加順</option>
+      <option value="name">名前順</option>
+      <option value="tag">カテゴリ順</option>
+    </select>
+  </div>
+  <div class="rest-filter-wrap" id="rest-filters">
+    <span class="tag-filter-label">絞り込み：</span>
+    <button class="rest-filter-btn active" data-f="all" onclick="setRestFilter(this)">すべて</button>
+    <button class="rest-filter-btn" data-f="chain" onclick="setRestFilter(this)">🔗 チェーン店のみ</button>
+    <button class="rest-filter-btn" data-f="local" onclick="setRestFilter(this)">🏠 個人店のみ</button>
+  </div>
+  <div class="cards-grid" id="rest-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
+</section>
+
+<!-- PREFECTURES -->
+<section id="pref-panel" class="panel" style="--panel-c: var(--pref)">
+  <div class="page-header">
+    <div>
+      <div class="page-title"><div class="page-title-icon" style="background:var(--pref-bg)">🗾</div>都道府県</div>
+      <div class="page-meta" id="pref-meta"></div>
+    </div>
+  </div>
+  <div class="pref-layout">
+    <div class="map-container">
+      <svg id="japan-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div class="map-legend">
+        <div><span class="legend-dot" style="background:var(--pref-bg);border:1.5px solid var(--pref-border)"></span>未訪問</div>
+        <div><span class="legend-dot" style="background:var(--pref)"></span>訪問済み（クリックで切替）</div>
+      </div>
+    </div>
+    <div class="pref-stats-panel">
+      <div class="stat-box">
+        <h3>VISITED</h3>
+        <div class="big-num" id="pref-big-num">0</div>
+        <div class="big-sub">/ 47都道府県</div>
+        <div class="progress-bar"><div class="progress-fill" id="pref-progress-fill" style="width:0%"></div></div>
+      </div>
+      <div class="stat-box">
+        <h3>地方別チェック</h3>
+        <div id="region-checklist"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ==================== MOVIE MODAL ==================== -->
+<div class="modal-overlay" id="movie-modal" onclick="closeModalOnBg(event,'movie-modal')" style="--modal-save-c: var(--movie); --focus-c: var(--movie)">
+  <div class="modal">
+    <div class="modal-title" id="movie-modal-title">🎬 映画を追加</div>
+    <div class="form-group">
+      <label class="form-label">タイトル *</label>
+      <input class="form-input" id="m-title" placeholder="映画タイトルを入力">
+    </div>
+    <div class="form-group">
+      <label class="form-label">評価</label>
+      <div class="star-select" id="modal-stars">
+        <span class="star" onclick="setModalStar(1)">★</span>
+        <span class="star" onclick="setModalStar(2)">★</span>
+        <span class="star" onclick="setModalStar(3)">★</span>
+        <span class="star" onclick="setModalStar(4)">★</span>
+        <span class="star" onclick="setModalStar(5)">★</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">タグ</label>
+      <div class="tag-manager">
+        <div class="tag-list-modal" id="modal-tag-list"></div>
+        <div class="tag-input-row">
+          <input id="modal-tag-input" placeholder="タグを入力（例：ホラー、邦画）" onkeydown="if(event.key==='Enter'){addModalTag();event.preventDefault();}">
+          <button class="tag-add-btn" onclick="addModalTag()">追加</button>
+        </div>
+        <div class="hint-tags" id="hint-tags"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">シリーズ作品</label>
+      <div class="series-toggle" onclick="toggleSeriesCheck()">
+        <div class="toggle-box" id="series-chk">✓</div>
+        <span style="font-size:13px;color:var(--text2)">シリーズとして登録する</span>
+      </div>
+      <div class="series-input-wrap" id="series-wrap">
+        <input class="form-input" id="m-series" placeholder="シリーズ名（例：鬼滅の刃、バイオハザード）">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ・感想</label>
+      <input class="form-input" id="m-memo" placeholder="任意のメモ…">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeMovieModal()">キャンセル</button>
+      <button class="btn-save" id="movie-save-btn" onclick="saveMovie()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PLACE MODAL ==================== -->
+<div class="modal-overlay" id="place-modal" onclick="closeModalOnBg(event,'place-modal')" style="--modal-save-c: var(--place); --focus-c: var(--place)">
+  <div class="modal">
+    <div class="modal-title" id="place-modal-title">📍 スポットを追加</div>
+    <div class="form-group">
+      <label class="form-label">スポット名 *</label>
+      <input class="form-input" id="p-name" placeholder="スポット名を入力">
+    </div>
+    <div class="form-group">
+      <label class="form-label">都道府県</label>
+      <select class="form-select" id="p-pref">
+        <option value="">── 選択してください ──</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ</label>
+      <input class="form-input" id="p-memo" placeholder="任意のメモ…">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePlaceModal()">キャンセル</button>
+      <button class="btn-save" onclick="savePlace()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== REST MODAL ==================== -->
+<div class="modal-overlay" id="rest-modal" onclick="closeModalOnBg(event,'rest-modal')" style="--modal-save-c: var(--rest); --focus-c: var(--rest)">
+  <div class="modal">
+    <div class="modal-title" id="rest-modal-title">🍽️ 飲食店を追加</div>
+    <div class="form-group">
+      <label class="form-label">店名 *</label>
+      <input class="form-input" id="r-name" placeholder="店名を入力">
+    </div>
+    <div class="form-group">
+      <label class="form-label">タグ</label>
+      <div class="tag-manager">
+        <div class="tag-list-modal" id="rest-tag-list"></div>
+        <div class="tag-input-row">
+          <input id="rest-tag-input" placeholder="タグを入力（例：ラーメン、イタリアン）" onkeydown="if(event.key==='Enter'){addRestTag();event.preventDefault();}">
+          <button class="tag-add-btn" onclick="addRestTag()">追加</button>
+        </div>
+        <div class="hint-tags" id="rest-hint-tags"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">チェーン店</label>
+      <div class="series-toggle" onclick="toggleChainCheck()">
+        <div class="toggle-box" id="chain-chk">✓</div>
+        <span style="font-size:13px;color:var(--text2)">チェーン店として登録する</span>
+      </div>
+      <div class="series-input-wrap" id="chain-name-wrap">
+        <input class="form-input" id="r-chain-name" placeholder="チェーン名（例：すき家、マクドナルド）">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ</label>
+      <input class="form-input" id="r-memo" placeholder="任意のメモ…">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeRestModal()">キャンセル</button>
+      <button class="btn-save" onclick="saveRest()">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DELETE CONFIRM MODAL ==================== -->
+<div class="modal-overlay" id="del-modal" onclick="closeModalOnBg(event,'del-modal')">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title">🗑️ 削除の確認</div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:20px" id="del-msg">この項目を削除しますか？</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeDelModal()">キャンセル</button>
+      <button class="btn-save" style="background:#dc2626" onclick="confirmDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- hidden file inputs for image upload -->
+<input type="file" class="img-file-input" id="place-img-input" accept="image/*" onchange="handleImgUpload(event,'place')">
+<input type="file" class="img-file-input" id="rest-img-input" accept="image/*" onchange="handleImgUpload(event,'rest')">
+
+<script>
+// ──────────────── Tag palette ────────────────
+const PALETTES = [
+  {bg:'#fff0eb',color:'#b83b1a'},{bg:'#eaf5ff',color:'#1568a0'},
+  {bg:'#edfaf3',color:'#166535'},{bg:'#f3f0ff',color:'#5b30c0'},
+  {bg:'#fce4ec',color:'#a0124a'},{bg:'#e3f2fd',color:'#0d47a1'},
+  {bg:'#fff8e1',color:'#92530a'},{bg:'#f1f8e9',color:'#33691e'},
+];
+function tagStyle(tag) {
+  let h = 0; for (const c of tag) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
+  return PALETTES[h % PALETTES.length];
+}
+
+// ──────────────── ALL_PREFS ────────────────
+const ALL_PREFS = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+
+// ──────────────── Data ────────────────
+let movies = [
+  "13日の金曜日","50回目のファーストキス","7つの贈り物","AI崩壊","MAMA","NOPE","RUN","TIME","barbalian",
+  "あの子は邪悪","ある男","うさぎドロップ","さんかく窓の外側は夜","まったく同じ三人の他人","もしも昨日が選べたら",
+  "アイアムマザー","アイランド","アウェイク","アグリーズ","アダムスファミリー","アップグレード","アナイアレイション",
+  "アナベル死霊人形の誕生","インザトールグラス","インシディアス最後の鍵","インシディアス序章","インセプション",
+  "ヴィジット","ヴェノム","ウィッシュルーム","オーメン","オデッセイ","カイジ","キャラクター","キャリー",
+  "クリープ","グリーンランド地球最後の２日間","グレムリン","ゲットアウト","コンジアム","ザ・ウォッチャーズ",
+  "ザ・ハント","ザ・メッセージ","ザ・ウィッチ","サイレンシング","殺人者の記憶法","シックスセンス",
+  "縞模様のパジャマの少年","シャッターアイランド","ショーシャンクの空に","呪詛","ジュラシックワールド",
+  "純情(韓国)","正体","ジョーカー","新聞記者","スクリーム","スケアストリーズ","ストレンジャーコール",
+  "スパイダーパニック","スプリット","スペースマン","スマホを落としただけなのに","セブン","空飛ぶタイヤ",
+  "ターミナル","第6客室の女","第９地区","チャイルドプレイ","チャッキー","チャッピー","沈黙のジェラシー",
+  "天国と地獄","遠い空の向こうに","ドクタースリープ","友罪","ドラゴンクエストユアストーリー",
+  "ドント・ウォーリー・ダーリン","ドント・ブリーズ","呪われの橋","パーフェクション","バイオハザード",
+  "パッセンジャー","バッドマン","ハッピーデスデイ","パラサイト 半地下の家族","ハリー・ポッター",
+  "ビッグ・フィッシュ","ビバリウム","ファーザー","ファースト・ラヴ","ファーナス　訣別の朝",
+  "ファンタスティック・ビースト","フォーカス","フライトプラン","フラクチャード","プラダを着た悪魔",
+  "ブラックフォン","プライベート・ライアン","プリティ・ウーマン","ベンジャミン・バトン","ボイス 深淵からの囁き",
+  "ホーンテッド 世界一怖いお化け屋敷","炎のデスポリス","マイ・インターン","マイ・スパイ","マネーボール",
+  "メメント","メランコリック","ラスト・ナイト・イン・ソーホー","ラブ・セカンドサイト","ラ・ヨローナ 泣く女",
+  "リプリー","ルール","レイクビューテラス","レディ・オア・ノット","蝋人形の館","ワンダー 君は太陽",
+  "悪女(台湾)","硫黄島からの手紙","記憶にございません！","ギフテッド","きみに読む物語","君の名前で僕を呼んで",
+  "国宝","神は見返りを求める","視線","三度目の殺人","死刑にいたる病","終わらない週末","鬼滅の刃 煉獄篇",
+  "私を忘れないで","容疑者Xの献身","ライフ"
+].map((title, i) => {
+  const seriesMap = {
+    'インシディアス最後の鍵': 'インシディアス', 'インシディアス序章': 'インシディアス',
+    'バイオハザード': 'バイオハザード', '鬼滅の刃 煉獄篇': '鬼滅の刃',
+    'チャッキー': 'チャイルドプレイ',
+  };
+  return { id: i+1, title, rating: 0, tags: [], series: seriesMap[title] || '', memo: '', addedAt: i };
+});
+let nextMovieId = movies.length + 1;
+
+let places = [
+  "京都漫画ミュージアム","淡路島 ニジゲンノモリ","離宮公園","イオン(神戸・加西・伊丹昆陽)","神戸ハーブ園",
+  "新三田パティシエスコヤマ","ビーナスブリッジ","異人館","姫路城","伊丹昆虫館","バッティングセンター・ボルダリング",
+  "たちばな湯(銭湯)","ハーバーランド","錦市場・西本願寺・河原町・鴨川・京都タワー・八坂神社","大阪HEP","丸山総合公園",
+  "須磨海浜公園","和歌山マリーナシティ","有馬温泉","万葉俱楽部","USJ","うさぎカフェ モフの家","ラウンドワン",
+  "ひまわりの丘公園","魚の棚","明石城","姫路セントラルパーク","竜ヶ岩洞・フラワーパーク・浜名湖","太陽公園",
+  "阪神競馬場","赤穂わくわくランド・きらきら坂","尼崎キューズモール","須磨シーワールド","ハウステンボス・軍艦島",
+  "エスタシオンデ神戸","奈良 東大寺・春日大社・プリンの森","滋賀 竹生島・ラコリーナ近江八幡・長浜城",
+  "あべのハルカス","王子プール","なばなの里","イングランドの丘","丸亀城","鳴門大橋","ジブリパーク",
+  "トヨタ博物館","金シャチ横丁","名古屋城","なんばグランド花月","カービィカフェ","ブルーベリーアイカフェ",
+  "竹生島","りんくうアウトレット","月化粧ファクトリー"
+].map((name, i) => ({ id: i+1, name, pref: '', memo: '', addedAt: i }));
+let nextPlaceId = places.length + 1;
+
+let restaurants = [
+  "100時間カレー","GGC","JINDOU","KOBE patisserie sato","a la carte","cantina pacato","dekoboko",
+  "hiromoバーガー","shion","あいするんです","あっぱれ水産","うどん 本陣 山田家","うなぎ藤田","お好み焼き 宴",
+  "かにかにnoodle@三宮","かもめ屋","かもめ食堂","からふね屋","がってん寿司","きりしま","くさぶえ","くつろぎ屋",
+  "神戸ブランド亭","神戸一","神戸北野テラス","江戸家食堂","吟松(奈良)","旭ラーメン","近江牛焼肉咲蔵",
+  "グリル一平","芳仙閣","讃岐うどん専門店 讃也","三田屋","四海ロウ","さわやかハンバーグ","神座","大起水産 三宮",
+  "天助","天下一品","炭火鰻 まるいち","中国酒屋(ふかひれ)","鳥光本店","トレ海老アーン@三宮",
+  "ナマステ ガネシャマハル","ハナゾノカフェ","はま寿司","肴のジンベエ 難波店","海カフェ pery pery",
+  "幸せのパンケーキ","ここちよ","ブルーシール","ビストロアンリー","ビストロプティポワ","ビストロ魚々園",
+  "まごころ手と手","まんだらや","麺屋ガテンZ","魁力屋","カウボーイカレー","カンジャンケジャン 渡",
+  "カンティーナパカット","ケンタッキー","漁師の家飯 名倉","イタリアンバルToreotto","珈集","神戸デュシャン",
+  "如月庵","サイゼリヤ","明日香","洋食さかぐち","陽の当たる場所","オステリアガウダンテ","パールレディ",
+  "ラーメン8910","ラーメンたろう","ラーメンまるい","ラーメン会(豚鶏節)","ラーメンひとしお","レストランプルミエ",
+  "蛤将軍","韓丼","すし居酒屋 市場寿司","すしえもん","味処いりふね"
+].map((name, i) => {
+  const CHAIN_NAMES = {"天下一品":"天下一品","はま寿司":"はま寿司","サイゼリヤ":"サイゼリヤ","ケンタッキー":"KFC","がってん寿司":"がってん寿司","魁力屋":"魁力屋","韓丼":"韓丼","神座":"神座","100時間カレー":"100時間カレー"};
+  return { id: i+1, name, tags: [], isChain: !!CHAIN_NAMES[name], chainName: CHAIN_NAMES[name]||'', memo: '', addedAt: i };
+});
+let nextRestId = restaurants.length + 1;
+
+const ALL_REGIONS = [
+  {r:"北海道・東北", p:["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県"]},
+  {r:"関東", p:["茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県"]},
+  {r:"中部", p:["新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県"]},
+  {r:"近畿", p:["三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県"]},
+  {r:"中国", p:["鳥取県","島根県","岡山県","広島県","山口県"]},
+  {r:"四国", p:["徳島県","香川県","愛媛県","高知県"]},
+  {r:"九州・沖縄", p:["福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"]}
+];
+
+let visitedPrefs = new Set(["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"]);
+
+// ──────────────── State ────────────────
+let activeTagFilter = 'all';
+let modalStar = 0;
+let modalTags = [];
+let isSeriesOn = false;
+let editingMovieId = null;
+
+let restModalTags = [];
+let isChainOn = false;
+let editingRestId = null;
+
+let editingPlaceId = null;
+
+let activeRestFilter = 'all';
+let activePlacePrefFilter = 'all';
+
+let pendingDelete = null; // { type, id }
+
+// ──────────────── Tabs ────────────────
+function switchTab(btn) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.panel).classList.add('active');
+}
+
+// ──────────────── Delete modal ────────────────
+function openDelModal(type, id, name) {
+  pendingDelete = { type, id };
+  document.getElementById('del-msg').textContent = `「${name}」を削除しますか？`;
+  document.getElementById('del-modal').classList.add('open');
+}
+function closeDelModal() { document.getElementById('del-modal').classList.remove('open'); pendingDelete = null; }
+function confirmDelete() {
+  if (!pendingDelete) return;
+  const { type, id } = pendingDelete;
+  if (type === 'movie') { movies = movies.filter(m => m.id !== id); renderTagFilters(); renderMovies(); }
+  else if (type === 'place') { places = places.filter(p => p.id !== id); renderPlaces(); }
+  else if (type === 'rest') { restaurants = restaurants.filter(r => r.id !== id); renderRest(); }
+  closeDelModal();
+}
+
+// ──────────────── closeModalOnBg ────────────────
+function closeModalOnBg(e, id) { if (e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open'); }
+
+// ──────────────── Movies ────────────────
+const POPULAR_TAGS = ['ホラー','サスペンス','SF','邦画','洋画','韓国映画','アクション','ヒューマン','コメディ','アニメ'];
+
+function getAllTags() {
+  const s = new Set();
+  movies.forEach(m => m.tags.forEach(t => s.add(t)));
+  return [...s].sort();
+}
+
+function renderTagFilters() {
+  const wrap = document.getElementById('tag-filters');
+  const tags = getAllTags();
+  const seriesCount = movies.filter(m => m.series).length;
+  wrap.innerHTML =
+    `<span class="tag-filter-label">絞り込み：</span>` +
+    `<button class="tag-filter-btn${activeTagFilter==='all'?' active':''}" data-tag="all" onclick="setTagFilter(this)">すべて</button>` +
+    `<button class="tag-filter-btn${activeTagFilter==='series'?' active':''}" data-tag="series" onclick="setTagFilter(this)">📺 シリーズ (${seriesCount})</button>` +
+    tags.map(t => {
+      const s = tagStyle(t);
+      const active = activeTagFilter === t ? ' active' : '';
+      return `<button class="tag-filter-btn${active}" data-tag="${t}" onclick="setTagFilter(this)" style="${active ? '' : `border-color:${s.bg}`}">${t}</button>`;
+    }).join('');
+}
+
+function setTagFilter(btn) {
+  activeTagFilter = typeof btn === 'string' ? btn : btn.dataset.tag;
+  renderTagFilters(); renderMovies();
+}
+
+function starsHTML(rating, id) {
+  return Array.from({length:5}, (_,i) =>
+    `<span class="star${i<rating?' lit':''}" onclick="setMovieStar(${id},${i+1})">★</span>`
+  ).join('');
+}
+
+function renderMovies() {
+  const q = document.querySelector('#movies-panel .search-wrap input').value.trim().toLowerCase();
+  const sortVal = document.getElementById('movie-sort').value;
+  let list = movies.filter(m => {
+    if (q && !m.title.toLowerCase().includes(q) && !m.series.toLowerCase().includes(q)) return false;
+    if (activeTagFilter === 'all') return true;
+    if (activeTagFilter === 'series') return !!m.series;
+    return m.tags.includes(activeTagFilter);
+  });
+  if (sortVal === 'rating') list = [...list].sort((a,b) => (b.rating||0)-(a.rating||0));
+  else if (sortVal === 'added') list = [...list].sort((a,b) => b.addedAt-a.addedAt);
+  else list = [...list].sort((a,b) => a.title.localeCompare(b.title,'ja'));
+
+  const grid = document.getElementById('movies-grid');
+  if (!list.length) { grid.innerHTML = `<div class="no-results">「${q||activeTagFilter}」の結果がありません</div>`; return; }
+
+  grid.innerHTML = list.map(m => {
+    const tagChips = m.tags.map(t => {
+      const s = tagStyle(t);
+      return `<span class="tag-chip" style="background:${s.bg};color:${s.color}" onclick="setTagFilter('${t}')">${t}</span>`;
+    }).join('');
+    const seriesBadge = m.series ? `<div class="card-series-badge">📺 ${m.series}</div>` : '';
+    return `<div class="movie-card">
+      <div class="card-actions">
+        <button class="card-action-btn edit" onclick="openEditMovieModal(${m.id})" title="編集">✏️</button>
+        <button class="card-action-btn del" onclick="openDelModal('movie',${m.id},'${m.title.replace(/'/g,"\\'")}');event.stopPropagation()" title="削除">🗑️</button>
+      </div>
+      ${seriesBadge}
+      <div class="card-title">${m.title}</div>
+      <div class="stars">${starsHTML(m.rating, m.id)}</div>
+      ${tagChips ? `<div class="card-tags">${tagChips}</div>` : ''}
+      ${m.memo ? `<div class="card-memo">${m.memo}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const rated = movies.filter(m => m.rating > 0);
+  const avgRating = rated.length ? (rated.reduce((s,m)=>s+m.rating,0)/rated.length).toFixed(1) : '-';
+  document.getElementById('movie-meta').textContent =
+    `全 ${movies.length} 本　|　シリーズあり ${movies.filter(m=>m.series).length} 本　|　平均評価 ${avgRating} ★`;
+  document.getElementById('cnt-movies').textContent = movies.length;
+}
+
+function setMovieStar(id, val) {
+  const m = movies.find(x => x.id === id);
+  if (m) { m.rating = m.rating === val ? 0 : val; renderMovies(); }
+}
+
+// Movie Modal
+function openMovieModal(edit) {
+  editingMovieId = edit ? edit.id : null;
+  modalStar = edit ? (edit.rating || 0) : 0;
+  modalTags = edit ? [...edit.tags] : [];
+  isSeriesOn = edit ? !!edit.series : false;
+  document.getElementById('m-title').value = edit ? edit.title : '';
+  document.getElementById('m-series').value = edit ? (edit.series || '') : '';
+  document.getElementById('m-memo').value = edit ? (edit.memo || '') : '';
+  document.getElementById('series-chk').classList.toggle('checked', isSeriesOn);
+  document.getElementById('series-wrap').classList.toggle('show', isSeriesOn);
+  document.getElementById('movie-modal-title').textContent = edit ? '✏️ 映画を編集' : '🎬 映画を追加';
+  document.getElementById('movie-save-btn').textContent = edit ? '更新する' : '保存する';
+  renderModalStars(); renderModalTags();
+  document.getElementById('hint-tags').innerHTML = POPULAR_TAGS.map(t =>
+    `<button class="hint-tag" onclick="addHintTag('${t}')">${t}</button>`
+  ).join('');
+  document.getElementById('movie-modal').classList.add('open');
+  setTimeout(() => document.getElementById('m-title').focus(), 50);
+}
+function openEditMovieModal(id) {
+  const m = movies.find(x => x.id === id);
+  if (m) openMovieModal(m);
+}
+function closeMovieModal() { document.getElementById('movie-modal').classList.remove('open'); }
+function setModalStar(v) { modalStar = modalStar===v ? 0 : v; renderModalStars(); }
+function renderModalStars() {
+  document.querySelectorAll('#modal-stars .star').forEach((s,i) => s.classList.toggle('lit', i < modalStar));
+}
+function addModalTag() {
+  const inp = document.getElementById('modal-tag-input');
+  const v = inp.value.trim(); if (!v || modalTags.includes(v)) { inp.value=''; return; }
+  modalTags.push(v); inp.value=''; renderModalTags();
+}
+function addHintTag(t) { if (!modalTags.includes(t)) { modalTags.push(t); renderModalTags(); } }
+function removeModalTag(t) { modalTags = modalTags.filter(x=>x!==t); renderModalTags(); }
+function renderModalTags() {
+  document.getElementById('modal-tag-list').innerHTML = modalTags.map(t => {
+    const s = tagStyle(t);
+    return `<span class="tag-removable" style="background:${s.bg};color:${s.color}" onclick="removeModalTag('${t}')"><span>${t}</span><span style="margin-left:3px;font-size:11px">✕</span></span>`;
+  }).join('');
+}
+function toggleSeriesCheck() {
+  isSeriesOn = !isSeriesOn;
+  document.getElementById('series-chk').classList.toggle('checked', isSeriesOn);
+  document.getElementById('series-wrap').classList.toggle('show', isSeriesOn);
+  if (isSeriesOn) document.getElementById('m-series').focus();
+}
+function saveMovie() {
+  const title = document.getElementById('m-title').value.trim();
+  if (!title) { document.getElementById('m-title').style.borderColor='var(--movie)'; document.getElementById('m-title').focus(); return; }
+  const series = isSeriesOn ? document.getElementById('m-series').value.trim() : '';
+  const memo = document.getElementById('m-memo').value.trim();
+  if (editingMovieId) {
+    const m = movies.find(x => x.id === editingMovieId);
+    if (m) { m.title = title; m.rating = modalStar; m.tags = [...modalTags]; m.series = series; m.memo = memo; }
+  } else {
+    movies.push({ id: nextMovieId++, title, rating: modalStar, tags:[...modalTags], series, memo, addedAt: Date.now() });
+  }
+  closeMovieModal(); renderTagFilters(); renderMovies();
+}
+
+// ──────────────── Places ────────────────
+// imageStore: id -> base64 dataURL
+const placeImages = {};
+const restImages = {};
+
+// global pending upload target
+let pendingImgTarget = null; // {type:'place'|'rest', id}
+
+function handleImgUpload(e, type) {
+  const file = e.target.files[0];
+  if (!file || !pendingImgTarget) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    if (type === 'place') { placeImages[pendingImgTarget.id] = ev.target.result; renderPlaces(); }
+    else { restImages[pendingImgTarget.id] = ev.target.result; renderRest(); }
+    e.target.value = '';
+    pendingImgTarget = null;
+  };
+  reader.readAsDataURL(file);
+}
+
+function triggerImgUpload(type, id) {
+  pendingImgTarget = { type, id };
+  document.getElementById(type + '-img-input').click();
+}
+
+function getPlacePrefList() {
+  const s = new Set();
+  places.forEach(p => { if (p.pref) s.add(p.pref); });
+  return [...s].sort((a,b) => ALL_PREFS.indexOf(a) - ALL_PREFS.indexOf(b));
+}
+
+function renderPlacePrefFilters() {
+  const prefs = getPlacePrefList();
+  const wrap = document.getElementById('place-pref-filters');
+  if (!prefs.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML =
+    `<span class="tag-filter-label">都道府県：</span>` +
+    `<button class="place-filter-btn${activePlacePrefFilter==='all'?' active':''}" data-pf="all" onclick="setPlacePrefFilter(this)">すべて</button>` +
+    prefs.map(p =>
+      `<button class="place-filter-btn${activePlacePrefFilter===p?' active':''}" data-pf="${p}" onclick="setPlacePrefFilter(this)">${p}</button>`
+    ).join('');
+}
+
+function setPlacePrefFilter(btn) {
+  activePlacePrefFilter = btn.dataset.pf;
+  renderPlacePrefFilters(); renderPlaces();
+}
+
+function renderPlaces() {
+  const q = document.querySelector('#places-panel .search-wrap input').value.trim().toLowerCase();
+  const sortVal = document.getElementById('place-sort').value;
+  let list = places.filter(p => {
+    const matchQ = !q || p.name.toLowerCase().includes(q) || (p.pref && p.pref.includes(q));
+    const matchPref = activePlacePrefFilter === 'all' || p.pref === activePlacePrefFilter;
+    return matchQ && matchPref;
+  });
+  if (sortVal === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
+  else if (sortVal === 'pref') list = [...list].sort((a,b) => {
+    const ai = ALL_PREFS.indexOf(a.pref), bi = ALL_PREFS.indexOf(b.pref);
+    if (ai < 0 && bi < 0) return 0; if (ai < 0) return 1; if (bi < 0) return -1;
+    return ai - bi || a.name.localeCompare(b.name,'ja');
+  });
+  else list = [...list].sort((a,b) => a.addedAt - b.addedAt);
+
+  const grid = document.getElementById('places-grid');
+  if (!list.length) { grid.innerHTML = `<div class="no-results">該当なし</div>`; return; }
+  grid.innerHTML = list.map((p) => {
+    const img = placeImages[p.id];
+    const thumb = img
+      ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('place',${p.id})" style="cursor:pointer">`
+      : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('place',${p.id})">
+           <div class="item-thumb-placeholder-label"><span>🖼️</span>写真を追加</div>
+         </div>`;
+    return `<div class="item-card" style="--panel-c:var(--place)">
+      <div class="card-actions">
+        <button class="card-action-btn edit" onclick="openEditPlaceModal(${p.id})" title="編集">✏️</button>
+        <button class="card-action-btn del" onclick="openDelModal('place',${p.id},'${p.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="削除">🗑️</button>
+      </div>
+      ${thumb}
+      <div class="item-body">
+        <div class="item-name">${p.name}</div>
+        <div class="item-sub">
+          ${p.pref ? `<span class="pref-badge">🗾 ${p.pref}</span>` : ''}
+          ${p.memo ? `<span style="color:var(--text3);font-style:italic;font-size:11px">${p.memo}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('places-meta').textContent = `全 ${places.length} 箇所`;
+  document.getElementById('cnt-places').textContent = places.length;
+}
+
+// Place Modal
+function populatePrefSelect(selId, val) {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = `<option value="">── 選択してください ──</option>` +
+    ALL_PREFS.map(p => `<option value="${p}"${p===val?' selected':''}>${p}</option>`).join('');
+}
+function openPlaceModal(edit) {
+  editingPlaceId = edit ? edit.id : null;
+  populatePrefSelect('p-pref', edit ? (edit.pref||'') : '');
+  document.getElementById('p-name').value = edit ? edit.name : '';
+  document.getElementById('p-memo').value = edit ? (edit.memo||'') : '';
+  document.getElementById('place-modal-title').textContent = edit ? '✏️ スポットを編集' : '📍 スポットを追加';
+  document.getElementById('place-modal').classList.add('open');
+  setTimeout(() => document.getElementById('p-name').focus(), 50);
+}
+function openEditPlaceModal(id) {
+  const p = places.find(x => x.id === id);
+  if (p) openPlaceModal(p);
+}
+function closePlaceModal() { document.getElementById('place-modal').classList.remove('open'); }
+function savePlace() {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { document.getElementById('p-name').style.borderColor='var(--place)'; document.getElementById('p-name').focus(); return; }
+  const pref = document.getElementById('p-pref').value;
+  const memo = document.getElementById('p-memo').value.trim();
+  if (editingPlaceId) {
+    const p = places.find(x => x.id === editingPlaceId);
+    if (p) { p.name = name; p.pref = pref; p.memo = memo; }
+  } else {
+    places.push({ id: nextPlaceId++, name, pref, memo, addedAt: Date.now() });
+  }
+  closePlaceModal(); renderPlacePrefFilters(); renderPlaces();
+}
+
+// ──────────────── Restaurants ────────────────
+const REST_HINT_TAGS = ['ラーメン','うどん','寿司','焼肉','イタリアン','中華','カフェ','ファストフード','居酒屋','カレー','フレンチ','韓国料理'];
+
+function setRestFilter(btn) {
+  activeRestFilter = btn.dataset.f;
+  document.querySelectorAll('.rest-filter-btn').forEach(b => b.classList.remove('active','chain-active'));
+  if (activeRestFilter === 'chain') btn.classList.add('chain-active');
+  else btn.classList.add('active');
+  renderRest();
+}
+
+function renderRest() {
+  const q = document.querySelector('#rest-panel .search-wrap input').value.trim().toLowerCase();
+  const sortVal = document.getElementById('rest-sort').value;
+  let list = restaurants.filter(r => {
+    const matchQ = !q || r.name.toLowerCase().includes(q) || (r.chainName && r.chainName.toLowerCase().includes(q));
+    const matchF = activeRestFilter === 'all' || (activeRestFilter === 'chain' && r.isChain) || (activeRestFilter === 'local' && !r.isChain);
+    return matchQ && matchF;
+  });
+  if (sortVal === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
+  else if (sortVal === 'tag') list = [...list].sort((a,b) => {
+    const at = (a.tags && a.tags[0]) || '\uFFFF';
+    const bt = (b.tags && b.tags[0]) || '\uFFFF';
+    return at.localeCompare(bt,'ja') || a.name.localeCompare(b.name,'ja');
+  });
+  else list = [...list].sort((a,b) => a.addedAt - b.addedAt);
+
+  const grid = document.getElementById('rest-grid');
+  if (!list.length) { grid.innerHTML = `<div class="no-results">該当なし</div>`; return; }
+  grid.innerHTML = list.map((r) => {
+    const tagChips = (r.tags||[]).map(t => {
+      const s = tagStyle(t);
+      return `<span class="tag-chip" style="background:${s.bg};color:${s.color}">${t}</span>`;
+    }).join('');
+    const img = restImages[r.id];
+    const thumb = img
+      ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('rest',${r.id})" style="cursor:pointer">`
+      : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('rest',${r.id})">
+           <div class="item-thumb-placeholder-label"><span>🖼️</span>写真を追加</div>
+         </div>`;
+    return `<div class="item-card" style="--panel-c:var(--rest)">
+      <div class="card-actions">
+        <button class="card-action-btn edit" onclick="openEditRestModal(${r.id})" title="編集">✏️</button>
+        <button class="card-action-btn del" onclick="openDelModal('rest',${r.id},'${r.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="削除">🗑️</button>
+      </div>
+      ${thumb}
+      <div class="item-body">
+        <div class="item-name">${r.name}</div>
+        <div class="item-sub">
+          ${r.isChain ? `<span class="chain-badge">🔗 ${r.chainName||'チェーン店'}</span>` : ''}
+          ${tagChips || ''}
+          ${r.memo ? `<span style="color:var(--text3);font-style:italic;font-size:11px">${r.memo}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const chainCount = restaurants.filter(r => r.isChain).length;
+  document.getElementById('rest-meta').textContent = `全 ${restaurants.length} 店舗　|　チェーン店 ${chainCount} 店`;
+  document.getElementById('cnt-rest').textContent = restaurants.length;
+}
+
+// Rest Modal
+function openRestModal(edit) {
+  editingRestId = edit ? edit.id : null;
+  restModalTags = edit ? [...(edit.tags||[])] : [];
+  isChainOn = edit ? !!edit.isChain : false;
+  document.getElementById('r-name').value = edit ? edit.name : '';
+  document.getElementById('r-chain-name').value = edit ? (edit.chainName||'') : '';
+  document.getElementById('r-memo').value = edit ? (edit.memo||'') : '';
+  document.getElementById('chain-chk').classList.toggle('checked-chain', isChainOn);
+  document.getElementById('chain-name-wrap').classList.toggle('show', isChainOn);
+  document.getElementById('rest-modal-title').textContent = edit ? '✏️ 飲食店を編集' : '🍽️ 飲食店を追加';
+  renderRestTags();
+  document.getElementById('rest-hint-tags').innerHTML = REST_HINT_TAGS.map(t =>
+    `<button class="hint-tag" onclick="addRestHintTag('${t}')">${t}</button>`
+  ).join('');
+  document.getElementById('rest-modal').classList.add('open');
+  setTimeout(() => document.getElementById('r-name').focus(), 50);
+}
+function openEditRestModal(id) {
+  const r = restaurants.find(x => x.id === id);
+  if (r) openRestModal(r);
+}
+function closeRestModal() { document.getElementById('rest-modal').classList.remove('open'); }
+function toggleChainCheck() {
+  isChainOn = !isChainOn;
+  document.getElementById('chain-chk').classList.toggle('checked-chain', isChainOn);
+  document.getElementById('chain-name-wrap').classList.toggle('show', isChainOn);
+  if (isChainOn) document.getElementById('r-chain-name').focus();
+}
+function addRestTag() {
+  const inp = document.getElementById('rest-tag-input');
+  const v = inp.value.trim(); if (!v || restModalTags.includes(v)) { inp.value=''; return; }
+  restModalTags.push(v); inp.value=''; renderRestTags();
+}
+function addRestHintTag(t) { if (!restModalTags.includes(t)) { restModalTags.push(t); renderRestTags(); } }
+function removeRestTag(t) { restModalTags = restModalTags.filter(x=>x!==t); renderRestTags(); }
+function renderRestTags() {
+  document.getElementById('rest-tag-list').innerHTML = restModalTags.map(t => {
+    const s = tagStyle(t);
+    return `<span class="tag-removable" style="background:${s.bg};color:${s.color}" onclick="removeRestTag('${t}')"><span>${t}</span><span style="margin-left:3px;font-size:11px">✕</span></span>`;
+  }).join('');
+}
+function saveRest() {
+  const name = document.getElementById('r-name').value.trim();
+  if (!name) { document.getElementById('r-name').style.borderColor='var(--rest)'; document.getElementById('r-name').focus(); return; }
+  const chainName = isChainOn ? document.getElementById('r-chain-name').value.trim() : '';
+  const memo = document.getElementById('r-memo').value.trim();
+  if (editingRestId) {
+    const r = restaurants.find(x => x.id === editingRestId);
+    if (r) { r.name = name; r.tags = [...restModalTags]; r.isChain = isChainOn; r.chainName = chainName; r.memo = memo; }
+  } else {
+    restaurants.push({ id: nextRestId++, name, tags:[...restModalTags], isChain: isChainOn, chainName, memo, addedAt: Date.now() });
+  }
+  closeRestModal(); renderRest();
+}
+
+// ──────────────── Prefecture Map ────────────────
+const PREF_GRID = [
+  ["北海道",7,0],
+  ["青森県",6,2],["岩手県",7,2],
+  ["秋田県",5,3],["宮城県",7,3],
+  ["山形県",5,4],["福島県",7,4],
+  ["新潟県",5,5],["栃木県",7,5],["茨城県",8,5],
+  ["群馬県",6,6],["埼玉県",7,6],["千葉県",8,6],
+  ["富山県",4,7],["長野県",6,7],["東京都",7,7],
+  ["石川県",3,8],["山梨県",6,8],["神奈川県",7,8],
+  ["福井県",3,9],["岐阜県",5,9],["静岡県",6,9],["愛知県",5,10],
+  ["滋賀県",4,9],["三重県",5,11],
+  ["鳥取県",2,10],["京都府",4,10],
+  ["島根県",1,10],["兵庫県",3,11],["大阪府",4,11],["奈良県",5,12],
+  ["岡山県",2,11],["和歌山県",4,12],
+  ["広島県",1,11],["徳島県",3,13],["香川県",2,12],
+  ["山口県",0,12],["愛媛県",1,12],["高知県",2,13],
+  ["福岡県",0,13],["佐賀県",0,14],["大分県",1,13],
+  ["長崎県",-1,14],["熊本県",0,15],["宮崎県",1,14],
+  ["鹿児島県",0,16],["沖縄県",-2,17],
+];
+
+function buildMap() {
+  const CW = 52, CH = 30, GAP = 3, OFFX = 90, OFFY = 8;
+  const svg = document.getElementById('japan-svg');
+  const minCol = Math.min(...PREF_GRID.map(r=>r[1]));
+  const maxCol = Math.max(...PREF_GRID.map(r=>r[1]));
+  const maxRow = Math.max(...PREF_GRID.map(r=>r[2]));
+  const svgW = OFFX + (maxCol - minCol + 1) * (CW+GAP) + 20;
+  const svgH = OFFY + (maxRow + 1) * (CH+GAP) + 20;
+  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+  let html = '';
+  PREF_GRID.forEach(([name, col, row]) => {
+    const x = OFFX + (col - minCol) * (CW+GAP);
+    const y = OFFY + row * (CH+GAP);
+    const visited = visitedPrefs.has(name);
+    const fillClass = visited ? 'pref-rect visited' : 'pref-rect';
+    const textFill = visited ? '#fff' : '#6b4fb8';
+    const fontSize = name.length >= 4 ? 8.5 : 9.5;
+    html += `<g data-pref="${name}" onclick="togglePref('${name}')" onmouseenter="showTip(event,'${name}')" onmouseleave="hideTip()" style="cursor:pointer">
+      <rect class="${fillClass}" x="${x}" y="${y}" width="${CW}" height="${CH}" rx="4" data-pref="${name}"/>
+      <text x="${x+CW/2}" y="${y+CH/2+4}" text-anchor="middle" font-size="${fontSize}" font-family="'Noto Sans JP',sans-serif" fill="${textFill}" pointer-events="none" font-weight="500">${name}</text>
+    </g>`;
+  });
+  svg.innerHTML = html;
+}
+
+function togglePref(name) {
+  if (visitedPrefs.has(name)) visitedPrefs.delete(name);
+  else visitedPrefs.add(name);
+  document.querySelectorAll(`[data-pref="${name}"]`).forEach(el => {
+    if (el.tagName === 'g') {
+      const rect = el.querySelector('rect');
+      const text = el.querySelector('text');
+      if (rect) rect.classList.toggle('visited', visitedPrefs.has(name));
+      if (text) text.setAttribute('fill', visitedPrefs.has(name) ? '#fff' : '#6b4fb8');
+    }
+  });
+  updatePrefStats(); renderRegionChecklist();
+}
+
+function showTip(e, name) {
+  const t = document.getElementById('pref-tooltip');
+  t.textContent = (visitedPrefs.has(name) ? '✓ 訪問済み — ' : '○ 未訪問 — ') + name;
+  t.classList.add('show');
+}
+function hideTip() { document.getElementById('pref-tooltip').classList.remove('show'); }
+document.addEventListener('mousemove', e => {
+  const t = document.getElementById('pref-tooltip');
+  if (t.classList.contains('show')) { t.style.left=(e.clientX+14)+'px'; t.style.top=(e.clientY-30)+'px'; }
+});
+
+function updatePrefStats() {
+  const n = visitedPrefs.size;
+  document.getElementById('pref-big-num').textContent = n;
+  document.getElementById('pref-progress-fill').style.width = (n/47*100).toFixed(1)+'%';
+  document.getElementById('pref-meta').textContent = `訪問済み ${n} / 47 都道府県`;
+  document.getElementById('cnt-pref').textContent = n;
+}
+
+function renderRegionChecklist() {
+  document.getElementById('region-checklist').innerHTML = ALL_REGIONS.map(({r, p}) =>
+    `<div class="region-section">
+      <div class="region-title">${r}</div>
+      <div class="region-prefs">${p.map(name =>
+        `<button class="pref-check-btn${visitedPrefs.has(name)?' visited':''}" onclick="togglePref('${name}');renderRegionChecklist()">${name}</button>`
+      ).join('')}</div>
+    </div>`
+  ).join('');
+}
+
+// ──────────────── Init ────────────────
+renderTagFilters();
+renderMovies();
+renderPlacePrefFilters();
+renderPlaces();
+renderRest();
+buildMap();
+updatePrefStats();
+renderRegionChecklist();
+</script>
+</body>
+</html>
