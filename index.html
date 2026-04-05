@@ -36,6 +36,19 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', sans-serif; min-height: 100vh; font-size: 14px; line-height: 1.6; }
 
+/* SAVE STATUS */
+#save-status { position: fixed; bottom: 20px; right: 20px; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #fff; z-index: 300; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+#save-status.show { opacity: 1; }
+#save-status.ok { background: var(--rest); }
+#save-status.err { background: #dc2626; }
+
+/* LOADING */
+#loading-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9998; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
+.loading-logo { font-family: 'Noto Serif JP', serif; font-size: 20px; font-weight: 900; color: var(--movie); }
+.loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--movie); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-msg { font-size: 13px; color: var(--text2); }
+
 /* HEADER */
 header { background: var(--white); border-bottom: 1.5px solid var(--border); position: sticky; top: 0; z-index: 200; }
 .header-inner { max-width: 1280px; margin: 0 auto; display: flex; align-items: center; height: 58px; padding: 0 20px; gap: 0; }
@@ -120,7 +133,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 .item-sub { font-size: 11px; color: var(--text2); margin-top: 5px; display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
 .chain-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: var(--chain-bg); color: var(--chain); border: 1px solid var(--chain-border); }
 .pref-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: var(--pref-bg); color: var(--pref); border: 1px solid var(--pref-border); }
-/* hidden file input for image upload */
 .img-file-input { display: none; }
 
 /* MODAL */
@@ -209,7 +221,17 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 </head>
 <body>
 
+<!-- ==================== LOADING SCREEN ==================== -->
+<div id="loading-screen">
+  <div class="loading-logo">🎬 思い出メモ</div>
+  <div class="loading-spinner"></div>
+  <div class="loading-msg">データを読み込み中…</div>
+</div>
+
 <div class="pref-tooltip" id="pref-tooltip"></div>
+
+<!-- SAVE STATUS TOAST -->
+<div id="save-status"></div>
 
 <header>
   <div class="header-inner">
@@ -481,7 +503,13 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 <input type="file" class="img-file-input" id="place-img-input" accept="image/*" onchange="handleImgUpload(event,'place')">
 <input type="file" class="img-file-input" id="rest-img-input" accept="image/*" onchange="handleImgUpload(event,'rest')">
 
-<script>
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
+  getFirestore, collection, doc, getDocs, setDoc, deleteDoc, getDoc
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
 // ──────────────── Tag palette ────────────────
 const PALETTES = [
   {bg:'#fff0eb',color:'#b83b1a'},{bg:'#eaf5ff',color:'#1568a0'},
@@ -494,77 +522,7 @@ function tagStyle(tag) {
   return PALETTES[h % PALETTES.length];
 }
 
-// ──────────────── ALL_PREFS ────────────────
 const ALL_PREFS = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
-
-// ──────────────── Data ────────────────
-let movies = [
-  "13日の金曜日","50回目のファーストキス","7つの贈り物","AI崩壊","MAMA","NOPE","RUN","TIME","barbalian",
-  "あの子は邪悪","ある男","うさぎドロップ","さんかく窓の外側は夜","まったく同じ三人の他人","もしも昨日が選べたら",
-  "アイアムマザー","アイランド","アウェイク","アグリーズ","アダムスファミリー","アップグレード","アナイアレイション",
-  "アナベル死霊人形の誕生","インザトールグラス","インシディアス最後の鍵","インシディアス序章","インセプション",
-  "ヴィジット","ヴェノム","ウィッシュルーム","オーメン","オデッセイ","カイジ","キャラクター","キャリー",
-  "クリープ","グリーンランド地球最後の２日間","グレムリン","ゲットアウト","コンジアム","ザ・ウォッチャーズ",
-  "ザ・ハント","ザ・メッセージ","ザ・ウィッチ","サイレンシング","殺人者の記憶法","シックスセンス",
-  "縞模様のパジャマの少年","シャッターアイランド","ショーシャンクの空に","呪詛","ジュラシックワールド",
-  "純情(韓国)","正体","ジョーカー","新聞記者","スクリーム","スケアストリーズ","ストレンジャーコール",
-  "スパイダーパニック","スプリット","スペースマン","スマホを落としただけなのに","セブン","空飛ぶタイヤ",
-  "ターミナル","第6客室の女","第９地区","チャイルドプレイ","チャッキー","チャッピー","沈黙のジェラシー",
-  "天国と地獄","遠い空の向こうに","ドクタースリープ","友罪","ドラゴンクエストユアストーリー",
-  "ドント・ウォーリー・ダーリン","ドント・ブリーズ","呪われの橋","パーフェクション","バイオハザード",
-  "パッセンジャー","バッドマン","ハッピーデスデイ","パラサイト 半地下の家族","ハリー・ポッター",
-  "ビッグ・フィッシュ","ビバリウム","ファーザー","ファースト・ラヴ","ファーナス　訣別の朝",
-  "ファンタスティック・ビースト","フォーカス","フライトプラン","フラクチャード","プラダを着た悪魔",
-  "ブラックフォン","プライベート・ライアン","プリティ・ウーマン","ベンジャミン・バトン","ボイス 深淵からの囁き",
-  "ホーンテッド 世界一怖いお化け屋敷","炎のデスポリス","マイ・インターン","マイ・スパイ","マネーボール",
-  "メメント","メランコリック","ラスト・ナイト・イン・ソーホー","ラブ・セカンドサイト","ラ・ヨローナ 泣く女",
-  "リプリー","ルール","レイクビューテラス","レディ・オア・ノット","蝋人形の館","ワンダー 君は太陽",
-  "悪女(台湾)","硫黄島からの手紙","記憶にございません！","ギフテッド","きみに読む物語","君の名前で僕を呼んで",
-  "国宝","神は見返りを求める","視線","三度目の殺人","死刑にいたる病","終わらない週末","鬼滅の刃 煉獄篇",
-  "私を忘れないで","容疑者Xの献身","ライフ"
-].map((title, i) => {
-  const seriesMap = {
-    'インシディアス最後の鍵': 'インシディアス', 'インシディアス序章': 'インシディアス',
-    'バイオハザード': 'バイオハザード', '鬼滅の刃 煉獄篇': '鬼滅の刃',
-    'チャッキー': 'チャイルドプレイ',
-  };
-  return { id: i+1, title, rating: 0, tags: [], series: seriesMap[title] || '', memo: '', addedAt: i };
-});
-let nextMovieId = movies.length + 1;
-
-let places = [
-  "京都漫画ミュージアム","淡路島 ニジゲンノモリ","離宮公園","イオン(神戸・加西・伊丹昆陽)","神戸ハーブ園",
-  "新三田パティシエスコヤマ","ビーナスブリッジ","異人館","姫路城","伊丹昆虫館","バッティングセンター・ボルダリング",
-  "たちばな湯(銭湯)","ハーバーランド","錦市場・西本願寺・河原町・鴨川・京都タワー・八坂神社","大阪HEP","丸山総合公園",
-  "須磨海浜公園","和歌山マリーナシティ","有馬温泉","万葉俱楽部","USJ","うさぎカフェ モフの家","ラウンドワン",
-  "ひまわりの丘公園","魚の棚","明石城","姫路セントラルパーク","竜ヶ岩洞・フラワーパーク・浜名湖","太陽公園",
-  "阪神競馬場","赤穂わくわくランド・きらきら坂","尼崎キューズモール","須磨シーワールド","ハウステンボス・軍艦島",
-  "エスタシオンデ神戸","奈良 東大寺・春日大社・プリンの森","滋賀 竹生島・ラコリーナ近江八幡・長浜城",
-  "あべのハルカス","王子プール","なばなの里","イングランドの丘","丸亀城","鳴門大橋","ジブリパーク",
-  "トヨタ博物館","金シャチ横丁","名古屋城","なんばグランド花月","カービィカフェ","ブルーベリーアイカフェ",
-  "竹生島","りんくうアウトレット","月化粧ファクトリー"
-].map((name, i) => ({ id: i+1, name, pref: '', memo: '', addedAt: i }));
-let nextPlaceId = places.length + 1;
-
-let restaurants = [
-  "100時間カレー","GGC","JINDOU","KOBE patisserie sato","a la carte","cantina pacato","dekoboko",
-  "hiromoバーガー","shion","あいするんです","あっぱれ水産","うどん 本陣 山田家","うなぎ藤田","お好み焼き 宴",
-  "かにかにnoodle@三宮","かもめ屋","かもめ食堂","からふね屋","がってん寿司","きりしま","くさぶえ","くつろぎ屋",
-  "神戸ブランド亭","神戸一","神戸北野テラス","江戸家食堂","吟松(奈良)","旭ラーメン","近江牛焼肉咲蔵",
-  "グリル一平","芳仙閣","讃岐うどん専門店 讃也","三田屋","四海ロウ","さわやかハンバーグ","神座","大起水産 三宮",
-  "天助","天下一品","炭火鰻 まるいち","中国酒屋(ふかひれ)","鳥光本店","トレ海老アーン@三宮",
-  "ナマステ ガネシャマハル","ハナゾノカフェ","はま寿司","肴のジンベエ 難波店","海カフェ pery pery",
-  "幸せのパンケーキ","ここちよ","ブルーシール","ビストロアンリー","ビストロプティポワ","ビストロ魚々園",
-  "まごころ手と手","まんだらや","麺屋ガテンZ","魁力屋","カウボーイカレー","カンジャンケジャン 渡",
-  "カンティーナパカット","ケンタッキー","漁師の家飯 名倉","イタリアンバルToreotto","珈集","神戸デュシャン",
-  "如月庵","サイゼリヤ","明日香","洋食さかぐち","陽の当たる場所","オステリアガウダンテ","パールレディ",
-  "ラーメン8910","ラーメンたろう","ラーメンまるい","ラーメン会(豚鶏節)","ラーメンひとしお","レストランプルミエ",
-  "蛤将軍","韓丼","すし居酒屋 市場寿司","すしえもん","味処いりふね"
-].map((name, i) => {
-  const CHAIN_NAMES = {"天下一品":"天下一品","はま寿司":"はま寿司","サイゼリヤ":"サイゼリヤ","ケンタッキー":"KFC","がってん寿司":"がってん寿司","魁力屋":"魁力屋","韓丼":"韓丼","神座":"神座","100時間カレー":"100時間カレー"};
-  return { id: i+1, name, tags: [], isChain: !!CHAIN_NAMES[name], chainName: CHAIN_NAMES[name]||'', memo: '', addedAt: i };
-});
-let nextRestId = restaurants.length + 1;
 
 const ALL_REGIONS = [
   {r:"北海道・東北", p:["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県"]},
@@ -576,52 +534,270 @@ const ALL_REGIONS = [
   {r:"九州・沖縄", p:["福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"]}
 ];
 
-let visitedPrefs = new Set(["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"]);
+// ──────────────── Firebase config (hardcoded) ────────────────
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAAeT9zLfPL91LV6Uykl4vdx9fCny3AGBE",
+  authDomain: "database-tkfamily0606.firebaseapp.com",
+  projectId: "database-tkfamily0606",
+  storageBucket: "database-tkfamily0606.firebasestorage.app",
+  messagingSenderId: "571512449505",
+  appId: "1:571512449505:web:3e9001d9d9b2b94212caa0",
+  measurementId: "G-DSZKEE07WP"
+};
 
-// ──────────────── State ────────────────
+// ──────────────── Firebase state ────────────────
+let db = null;
+
+// ──────────────── Data ────────────────
+let movies = [];
+let places = [];
+let restaurants = [];
+let visitedPrefs = new Set();
+const placeImages = {};
+const restImages = {};
+let nextMovieId = 1;
+let nextPlaceId = 1;
+let nextRestId = 1;
+
+// ──────────────── Default data ────────────────
+function getDefaultMovies() {
+  return [
+    "13日の金曜日","50回目のファーストキス","7つの贈り物","AI崩壊","MAMA","NOPE","RUN","TIME","barbalian",
+    "あの子は邪悪","ある男","うさぎドロップ","さんかく窓の外側は夜","まったく同じ三人の他人","もしも昨日が選べたら",
+    "アイアムマザー","アイランド","アウェイク","アグリーズ","アダムスファミリー","アップグレード","アナイアレイション",
+    "アナベル死霊人形の誕生","インザトールグラス","インシディアス最後の鍵","インシディアス序章","インセプション",
+    "ヴィジット","ヴェノム","ウィッシュルーム","オーメン","オデッセイ","カイジ","キャラクター","キャリー",
+    "クリープ","グリーンランド地球最後の２日間","グレムリン","ゲットアウト","コンジアム","ザ・ウォッチャーズ",
+    "ザ・ハント","ザ・メッセージ","ザ・ウィッチ","サイレンシング","殺人者の記憶法","シックスセンス",
+    "縞模様のパジャマの少年","シャッターアイランド","ショーシャンクの空に","呪詛","ジュラシックワールド",
+    "純情(韓国)","正体","ジョーカー","新聞記者","スクリーム","スケアストリーズ","ストレンジャーコール",
+    "スパイダーパニック","スプリット","スペースマン","スマホを落としただけなのに","セブン","空飛ぶタイヤ",
+    "ターミナル","第6客室の女","第９地区","チャイルドプレイ","チャッキー","チャッピー","沈黙のジェラシー",
+    "天国と地獄","遠い空の向こうに","ドクタースリープ","友罪","ドラゴンクエストユアストーリー",
+    "ドント・ウォーリー・ダーリン","ドント・ブリーズ","呪われの橋","パーフェクション","バイオハザード",
+    "パッセンジャー","バッドマン","ハッピーデスデイ","パラサイト 半地下の家族","ハリー・ポッター",
+    "ビッグ・フィッシュ","ビバリウム","ファーザー","ファースト・ラヴ","ファーナス　訣別の朝",
+    "ファンタスティック・ビースト","フォーカス","フライトプラン","フラクチャード","プラダを着た悪魔",
+    "ブラックフォン","プライベート・ライアン","プリティ・ウーマン","ベンジャミン・バトン","ボイス 深淵からの囁き",
+    "ホーンテッド 世界一怖いお化け屋敷","炎のデスポリス","マイ・インターン","マイ・スパイ","マネーボール",
+    "メメント","メランコリック","ラスト・ナイト・イン・ソーホー","ラブ・セカンドサイト","ラ・ヨローナ 泣く女",
+    "リプリー","ルール","レイクビューテラス","レディ・オア・ノット","蝋人形の館","ワンダー 君は太陽",
+    "悪女(台湾)","硫黄島からの手紙","記憶にございません！","ギフテッド","きみに読む物語","君の名前で僕を呼んで",
+    "国宝","神は見返りを求める","視線","三度目の殺人","死刑にいたる病","終わらない週末","鬼滅の刃 煉獄篇",
+    "私を忘れないで","容疑者Xの献身","ライフ"
+  ].map((title, i) => {
+    const seriesMap = {
+      'インシディアス最後の鍵': 'インシディアス', 'インシディアス序章': 'インシディアス',
+      'バイオハザード': 'バイオハザード', '鬼滅の刃 煉獄篇': '鬼滅の刃', 'チャッキー': 'チャイルドプレイ',
+    };
+    return { id: i+1, title, rating: 0, tags: [], series: seriesMap[title] || '', memo: '', addedAt: i };
+  });
+}
+
+function getDefaultPlaces() {
+  return [
+    "京都漫画ミュージアム","淡路島 ニジゲンノモリ","離宮公園","イオン(神戸・加西・伊丹昆陽)","神戸ハーブ園",
+    "新三田パティシエスコヤマ","ビーナスブリッジ","異人館","姫路城","伊丹昆虫館","バッティングセンター・ボルダリング",
+    "たちばな湯(銭湯)","ハーバーランド","錦市場・西本願寺・河原町・鴨川・京都タワー・八坂神社","大阪HEP","丸山総合公園",
+    "須磨海浜公園","和歌山マリーナシティ","有馬温泉","万葉俱楽部","USJ","うさぎカフェ モフの家","ラウンドワン",
+    "ひまわりの丘公園","魚の棚","明石城","姫路セントラルパーク","竜ヶ岩洞・フラワーパーク・浜名湖","太陽公園",
+    "阪神競馬場","赤穂わくわくランド・きらきら坂","尼崎キューズモール","須磨シーワールド","ハウステンボス・軍艦島",
+    "エスタシオンデ神戸","奈良 東大寺・春日大社・プリンの森","滋賀 竹生島・ラコリーナ近江八幡・長浜城",
+    "あべのハルカス","王子プール","なばなの里","イングランドの丘","丸亀城","鳴門大橋","ジブリパーク",
+    "トヨタ博物館","金シャチ横丁","名古屋城","なんばグランド花月","カービィカフェ","ブルーベリーアイカフェ",
+    "竹生島","りんくうアウトレット","月化粧ファクトリー"
+  ].map((name, i) => ({ id: i+1, name, pref: '', memo: '', addedAt: i }));
+}
+
+function getDefaultRestaurants() {
+  const CHAIN_NAMES = {"天下一品":"天下一品","はま寿司":"はま寿司","サイゼリヤ":"サイゼリヤ","ケンタッキー":"KFC","がってん寿司":"がってん寿司","魁力屋":"魁力屋","韓丼":"韓丼","神座":"神座","100時間カレー":"100時間カレー"};
+  return [
+    "100時間カレー","GGC","JINDOU","KOBE patisserie sato","a la carte","cantina pacato","dekoboko",
+    "hiromoバーガー","shion","あいするんです","あっぱれ水産","うどん 本陣 山田家","うなぎ藤田","お好み焼き 宴",
+    "かにかにnoodle@三宮","かもめ屋","かもめ食堂","からふね屋","がってん寿司","きりしま","くさぶえ","くつろぎ屋",
+    "神戸ブランド亭","神戸一","神戸北野テラス","江戸家食堂","吟松(奈良)","旭ラーメン","近江牛焼肉咲蔵",
+    "グリル一平","芳仙閣","讃岐うどん専門店 讃也","三田屋","四海ロウ","さわやかハンバーグ","神座","大起水産 三宮",
+    "天助","天下一品","炭火鰻 まるいち","中国酒屋(ふかひれ)","鳥光本店","トレ海老アーン@三宮",
+    "ナマステ ガネシャマハル","ハナゾノカフェ","はま寿司","肴のジンベエ 難波店","海カフェ pery pery",
+    "幸せのパンケーキ","ここちよ","ブルーシール","ビストロアンリー","ビストロプティポワ","ビストロ魚々園",
+    "まごころ手と手","まんだらや","麺屋ガテンZ","魁力屋","カウボーイカレー","カンジャンケジャン 渡",
+    "カンティーナパカット","ケンタッキー","漁師の家飯 名倉","イタリアンバルToreotto","珈集","神戸デュシャン",
+    "如月庵","サイゼリヤ","明日香","洋食さかぐち","陽の当たる場所","オステリアガウダンテ","パールレディ",
+    "ラーメン8910","ラーメンたろう","ラーメンまるい","ラーメン会(豚鶏節)","ラーメンひとしお","レストランプルミエ",
+    "蛤将軍","韓丼","すし居酒屋 市場寿司","すしえもん","味処いりふね"
+  ].map((name, i) => ({ id: i+1, name, tags: [], isChain: !!CHAIN_NAMES[name], chainName: CHAIN_NAMES[name]||'', memo: '', addedAt: i }));
+}
+
+function getDefaultPrefs() {
+  return new Set(["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"]);
+}
+
+// ──────────────── Save Status Toast ────────────────
+let saveTimer = null;
+function showSaveStatus(ok, msg) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.className = 'show ' + (ok ? 'ok' : 'err');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { el.className = ''; }, 2500);
+}
+
+// ──────────────── Firestore helpers ────────────────
+async function fsGet(colName) {
+  if (!db) return null;
+  try {
+    const snap = await getDocs(collection(db, colName));
+    return snap.docs.map(d => ({ fsDocId: d.id, ...d.data() }));
+  } catch(e) { console.error(e); return null; }
+}
+
+async function fsSet(colName, id, data) {
+  if (!db) return;
+  try {
+    await setDoc(doc(db, colName, String(id)), data);
+    showSaveStatus(true, '✓ 保存しました');
+  } catch(e) {
+    console.error(e);
+    showSaveStatus(false, '保存に失敗しました');
+  }
+}
+
+async function fsDel(colName, id) {
+  if (!db) return;
+  try {
+    await deleteDoc(doc(db, colName, String(id)));
+    showSaveStatus(true, '✓ 削除しました');
+  } catch(e) {
+    console.error(e);
+    showSaveStatus(false, '削除に失敗しました');
+  }
+}
+
+// ──────────────── Firebase connect (auto, hardcoded config) ────────────────
+async function initAndLoad() {
+  const ls = document.getElementById('loading-screen');
+  ls.style.display = 'flex';
+  try {
+    const app = initializeApp(FIREBASE_CONFIG);
+    db = getFirestore(app);
+    await loadFirestoreData();
+  } catch(e) {
+    console.error('Firebase接続エラー:', e);
+    ls.querySelector('.loading-msg').textContent = '接続に失敗しました。ページを再読み込みしてください。';
+    ls.querySelector('.loading-msg').style.color = '#dc2626';
+    return;
+  }
+  ls.style.display = 'none';
+  initApp();
+}
+
+async function loadFirestoreData() {
+  // movies
+  const moviesData = await fsGet('movies');
+  if (moviesData && moviesData.length > 0) {
+    movies = moviesData.map(d => ({ id: d.id, title: d.title||'', rating: d.rating||0, tags: d.tags||[], series: d.series||'', memo: d.memo||'', addedAt: d.addedAt||0 }));
+    nextMovieId = Math.max(...movies.map(m => m.id), 0) + 1;
+  } else {
+    movies = getDefaultMovies();
+    nextMovieId = movies.length + 1;
+    // Save defaults
+    for (const m of movies) await fsSet('movies', m.id, { id: m.id, title: m.title, rating: m.rating, tags: m.tags, series: m.series, memo: m.memo, addedAt: m.addedAt });
+  }
+  // places
+  const placesData = await fsGet('places');
+  if (placesData && placesData.length > 0) {
+    places = placesData.map(d => ({ id: d.id, name: d.name||'', pref: d.pref||'', memo: d.memo||'', addedAt: d.addedAt||0 }));
+    nextPlaceId = Math.max(...places.map(p => p.id), 0) + 1;
+  } else {
+    places = getDefaultPlaces();
+    nextPlaceId = places.length + 1;
+    for (const p of places) await fsSet('places', p.id, { id: p.id, name: p.name, pref: p.pref, memo: p.memo, addedAt: p.addedAt });
+  }
+  // restaurants
+  const restData = await fsGet('restaurants');
+  if (restData && restData.length > 0) {
+    restaurants = restData.map(d => ({ id: d.id, name: d.name||'', tags: d.tags||[], isChain: !!d.isChain, chainName: d.chainName||'', memo: d.memo||'', addedAt: d.addedAt||0 }));
+    nextRestId = Math.max(...restaurants.map(r => r.id), 0) + 1;
+  } else {
+    restaurants = getDefaultRestaurants();
+    nextRestId = restaurants.length + 1;
+    for (const r of restaurants) await fsSet('restaurants', r.id, { id: r.id, name: r.name, tags: r.tags, isChain: r.isChain, chainName: r.chainName, memo: r.memo, addedAt: r.addedAt });
+  }
+  // prefs
+  const prefsDoc = await (async () => { try { const d = await getDoc(doc(db, 'settings', 'prefs')); return d.exists() ? d.data() : null; } catch(e) { return null; } })();
+  if (prefsDoc && prefsDoc.visited) {
+    visitedPrefs = new Set(prefsDoc.visited);
+  } else {
+    visitedPrefs = getDefaultPrefs();
+    await fsSet('settings', 'prefs', { visited: [...visitedPrefs] });
+  }
+}
+
+// ──────────────── Auto-connect on load ────────────────
+initAndLoad();
+
+// ──────────────── App State ────────────────
 let activeTagFilter = 'all';
 let modalStar = 0;
 let modalTags = [];
 let isSeriesOn = false;
 let editingMovieId = null;
-
 let restModalTags = [];
 let isChainOn = false;
 let editingRestId = null;
-
 let editingPlaceId = null;
-
 let activeRestFilter = 'all';
 let activePlacePrefFilter = 'all';
+let pendingDelete = null;
+let pendingImgTarget = null;
 
-let pendingDelete = null; // { type, id }
+// ──────────────── Init App ────────────────
+function initApp() {
+  renderTagFilters();
+  renderMovies();
+  renderPlacePrefFilters();
+  renderPlaces();
+  renderRest();
+  buildMap();
+  updatePrefStats();
+  renderRegionChecklist();
+}
 
 // ──────────────── Tabs ────────────────
-function switchTab(btn) {
+window.switchTab = function(btn) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(btn.dataset.panel).classList.add('active');
-}
+};
 
 // ──────────────── Delete modal ────────────────
-function openDelModal(type, id, name) {
+window.openDelModal = function(type, id, name) {
   pendingDelete = { type, id };
   document.getElementById('del-msg').textContent = `「${name}」を削除しますか？`;
   document.getElementById('del-modal').classList.add('open');
-}
-function closeDelModal() { document.getElementById('del-modal').classList.remove('open'); pendingDelete = null; }
-function confirmDelete() {
+};
+window.closeDelModal = function() { document.getElementById('del-modal').classList.remove('open'); pendingDelete = null; };
+window.confirmDelete = async function() {
   if (!pendingDelete) return;
   const { type, id } = pendingDelete;
-  if (type === 'movie') { movies = movies.filter(m => m.id !== id); renderTagFilters(); renderMovies(); }
-  else if (type === 'place') { places = places.filter(p => p.id !== id); renderPlaces(); }
-  else if (type === 'rest') { restaurants = restaurants.filter(r => r.id !== id); renderRest(); }
+  if (type === 'movie') {
+    movies = movies.filter(m => m.id !== id);
+    await fsDel('movies', id);
+    renderTagFilters(); renderMovies();
+  } else if (type === 'place') {
+    places = places.filter(p => p.id !== id);
+    await fsDel('places', id);
+    renderPlaces();
+  } else if (type === 'rest') {
+    restaurants = restaurants.filter(r => r.id !== id);
+    await fsDel('restaurants', id);
+    renderRest();
+  }
   closeDelModal();
-}
+};
 
-// ──────────────── closeModalOnBg ────────────────
-function closeModalOnBg(e, id) { if (e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open'); }
+window.closeModalOnBg = function(e, id) { if (e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open'); };
 
 // ──────────────── Movies ────────────────
 const POPULAR_TAGS = ['ホラー','サスペンス','SF','邦画','洋画','韓国映画','アクション','ヒューマン','コメディ','アニメ'];
@@ -647,10 +823,10 @@ function renderTagFilters() {
     }).join('');
 }
 
-function setTagFilter(btn) {
+window.setTagFilter = function(btn) {
   activeTagFilter = typeof btn === 'string' ? btn : btn.dataset.tag;
   renderTagFilters(); renderMovies();
-}
+};
 
 function starsHTML(rating, id) {
   return Array.from({length:5}, (_,i) =>
@@ -662,7 +838,7 @@ function renderMovies() {
   const q = document.querySelector('#movies-panel .search-wrap input').value.trim().toLowerCase();
   const sortVal = document.getElementById('movie-sort').value;
   let list = movies.filter(m => {
-    if (q && !m.title.toLowerCase().includes(q) && !m.series.toLowerCase().includes(q)) return false;
+    if (q && !m.title.toLowerCase().includes(q) && !(m.series||'').toLowerCase().includes(q)) return false;
     if (activeTagFilter === 'all') return true;
     if (activeTagFilter === 'series') return !!m.series;
     return m.tags.includes(activeTagFilter);
@@ -700,13 +876,17 @@ function renderMovies() {
   document.getElementById('cnt-movies').textContent = movies.length;
 }
 
-function setMovieStar(id, val) {
+window.setMovieStar = async function(id, val) {
   const m = movies.find(x => x.id === id);
-  if (m) { m.rating = m.rating === val ? 0 : val; renderMovies(); }
-}
+  if (m) {
+    m.rating = m.rating === val ? 0 : val;
+    await fsSet('movies', id, { id: m.id, title: m.title, rating: m.rating, tags: m.tags, series: m.series, memo: m.memo, addedAt: m.addedAt });
+    renderMovies();
+  }
+};
 
 // Movie Modal
-function openMovieModal(edit) {
+window.openMovieModal = function(edit) {
   editingMovieId = edit ? edit.id : null;
   modalStar = edit ? (edit.rating || 0) : 0;
   modalTags = edit ? [...edit.tags] : [];
@@ -724,58 +904,54 @@ function openMovieModal(edit) {
   ).join('');
   document.getElementById('movie-modal').classList.add('open');
   setTimeout(() => document.getElementById('m-title').focus(), 50);
-}
-function openEditMovieModal(id) {
+};
+window.openEditMovieModal = function(id) {
   const m = movies.find(x => x.id === id);
   if (m) openMovieModal(m);
-}
-function closeMovieModal() { document.getElementById('movie-modal').classList.remove('open'); }
-function setModalStar(v) { modalStar = modalStar===v ? 0 : v; renderModalStars(); }
+};
+window.closeMovieModal = function() { document.getElementById('movie-modal').classList.remove('open'); };
+window.setModalStar = function(v) { modalStar = modalStar===v ? 0 : v; renderModalStars(); };
 function renderModalStars() {
   document.querySelectorAll('#modal-stars .star').forEach((s,i) => s.classList.toggle('lit', i < modalStar));
 }
-function addModalTag() {
+window.addModalTag = function() {
   const inp = document.getElementById('modal-tag-input');
   const v = inp.value.trim(); if (!v || modalTags.includes(v)) { inp.value=''; return; }
   modalTags.push(v); inp.value=''; renderModalTags();
-}
-function addHintTag(t) { if (!modalTags.includes(t)) { modalTags.push(t); renderModalTags(); } }
-function removeModalTag(t) { modalTags = modalTags.filter(x=>x!==t); renderModalTags(); }
+};
+window.addHintTag = function(t) { if (!modalTags.includes(t)) { modalTags.push(t); renderModalTags(); } };
+window.removeModalTag = function(t) { modalTags = modalTags.filter(x=>x!==t); renderModalTags(); };
 function renderModalTags() {
   document.getElementById('modal-tag-list').innerHTML = modalTags.map(t => {
     const s = tagStyle(t);
     return `<span class="tag-removable" style="background:${s.bg};color:${s.color}" onclick="removeModalTag('${t}')"><span>${t}</span><span style="margin-left:3px;font-size:11px">✕</span></span>`;
   }).join('');
 }
-function toggleSeriesCheck() {
+window.toggleSeriesCheck = function() {
   isSeriesOn = !isSeriesOn;
   document.getElementById('series-chk').classList.toggle('checked', isSeriesOn);
   document.getElementById('series-wrap').classList.toggle('show', isSeriesOn);
   if (isSeriesOn) document.getElementById('m-series').focus();
-}
-function saveMovie() {
+};
+window.saveMovie = async function() {
   const title = document.getElementById('m-title').value.trim();
   if (!title) { document.getElementById('m-title').style.borderColor='var(--movie)'; document.getElementById('m-title').focus(); return; }
   const series = isSeriesOn ? document.getElementById('m-series').value.trim() : '';
   const memo = document.getElementById('m-memo').value.trim();
+  let movieData;
   if (editingMovieId) {
     const m = movies.find(x => x.id === editingMovieId);
-    if (m) { m.title = title; m.rating = modalStar; m.tags = [...modalTags]; m.series = series; m.memo = memo; }
+    if (m) { m.title = title; m.rating = modalStar; m.tags = [...modalTags]; m.series = series; m.memo = memo; movieData = m; }
   } else {
-    movies.push({ id: nextMovieId++, title, rating: modalStar, tags:[...modalTags], series, memo, addedAt: Date.now() });
+    movieData = { id: nextMovieId++, title, rating: modalStar, tags:[...modalTags], series, memo, addedAt: Date.now() };
+    movies.push(movieData);
   }
+  if (movieData) await fsSet('movies', movieData.id, { id: movieData.id, title: movieData.title, rating: movieData.rating, tags: movieData.tags, series: movieData.series, memo: movieData.memo, addedAt: movieData.addedAt });
   closeMovieModal(); renderTagFilters(); renderMovies();
-}
+};
 
 // ──────────────── Places ────────────────
-// imageStore: id -> base64 dataURL
-const placeImages = {};
-const restImages = {};
-
-// global pending upload target
-let pendingImgTarget = null; // {type:'place'|'rest', id}
-
-function handleImgUpload(e, type) {
+window.handleImgUpload = function(e, type) {
   const file = e.target.files[0];
   if (!file || !pendingImgTarget) return;
   const reader = new FileReader();
@@ -786,19 +962,17 @@ function handleImgUpload(e, type) {
     pendingImgTarget = null;
   };
   reader.readAsDataURL(file);
-}
-
-function triggerImgUpload(type, id) {
+};
+window.triggerImgUpload = function(type, id) {
   pendingImgTarget = { type, id };
   document.getElementById(type + '-img-input').click();
-}
+};
 
 function getPlacePrefList() {
   const s = new Set();
   places.forEach(p => { if (p.pref) s.add(p.pref); });
   return [...s].sort((a,b) => ALL_PREFS.indexOf(a) - ALL_PREFS.indexOf(b));
 }
-
 function renderPlacePrefFilters() {
   const prefs = getPlacePrefList();
   const wrap = document.getElementById('place-pref-filters');
@@ -810,12 +984,10 @@ function renderPlacePrefFilters() {
       `<button class="place-filter-btn${activePlacePrefFilter===p?' active':''}" data-pf="${p}" onclick="setPlacePrefFilter(this)">${p}</button>`
     ).join('');
 }
-
-function setPlacePrefFilter(btn) {
+window.setPlacePrefFilter = function(btn) {
   activePlacePrefFilter = btn.dataset.pf;
   renderPlacePrefFilters(); renderPlaces();
-}
-
+};
 function renderPlaces() {
   const q = document.querySelector('#places-panel .search-wrap input').value.trim().toLowerCase();
   const sortVal = document.getElementById('place-sort').value;
@@ -866,7 +1038,7 @@ function populatePrefSelect(selId, val) {
   sel.innerHTML = `<option value="">── 選択してください ──</option>` +
     ALL_PREFS.map(p => `<option value="${p}"${p===val?' selected':''}>${p}</option>`).join('');
 }
-function openPlaceModal(edit) {
+window.openPlaceModal = function(edit) {
   editingPlaceId = edit ? edit.id : null;
   populatePrefSelect('p-pref', edit ? (edit.pref||'') : '');
   document.getElementById('p-name').value = edit ? edit.name : '';
@@ -874,36 +1046,39 @@ function openPlaceModal(edit) {
   document.getElementById('place-modal-title').textContent = edit ? '✏️ スポットを編集' : '📍 スポットを追加';
   document.getElementById('place-modal').classList.add('open');
   setTimeout(() => document.getElementById('p-name').focus(), 50);
-}
-function openEditPlaceModal(id) {
+};
+window.openEditPlaceModal = function(id) {
   const p = places.find(x => x.id === id);
   if (p) openPlaceModal(p);
-}
-function closePlaceModal() { document.getElementById('place-modal').classList.remove('open'); }
-function savePlace() {
+};
+window.closePlaceModal = function() { document.getElementById('place-modal').classList.remove('open'); };
+window.savePlace = async function() {
   const name = document.getElementById('p-name').value.trim();
   if (!name) { document.getElementById('p-name').style.borderColor='var(--place)'; document.getElementById('p-name').focus(); return; }
   const pref = document.getElementById('p-pref').value;
   const memo = document.getElementById('p-memo').value.trim();
+  let placeData;
   if (editingPlaceId) {
     const p = places.find(x => x.id === editingPlaceId);
-    if (p) { p.name = name; p.pref = pref; p.memo = memo; }
+    if (p) { p.name = name; p.pref = pref; p.memo = memo; placeData = p; }
   } else {
-    places.push({ id: nextPlaceId++, name, pref, memo, addedAt: Date.now() });
+    placeData = { id: nextPlaceId++, name, pref, memo, addedAt: Date.now() };
+    places.push(placeData);
   }
+  if (placeData) await fsSet('places', placeData.id, { id: placeData.id, name: placeData.name, pref: placeData.pref, memo: placeData.memo, addedAt: placeData.addedAt });
   closePlaceModal(); renderPlacePrefFilters(); renderPlaces();
-}
+};
 
 // ──────────────── Restaurants ────────────────
 const REST_HINT_TAGS = ['ラーメン','うどん','寿司','焼肉','イタリアン','中華','カフェ','ファストフード','居酒屋','カレー','フレンチ','韓国料理'];
 
-function setRestFilter(btn) {
+window.setRestFilter = function(btn) {
   activeRestFilter = btn.dataset.f;
   document.querySelectorAll('.rest-filter-btn').forEach(b => b.classList.remove('active','chain-active'));
   if (activeRestFilter === 'chain') btn.classList.add('chain-active');
   else btn.classList.add('active');
   renderRest();
-}
+};
 
 function renderRest() {
   const q = document.querySelector('#rest-panel .search-wrap input').value.trim().toLowerCase();
@@ -956,7 +1131,7 @@ function renderRest() {
 }
 
 // Rest Modal
-function openRestModal(edit) {
+window.openRestModal = function(edit) {
   editingRestId = edit ? edit.id : null;
   restModalTags = edit ? [...(edit.tags||[])] : [];
   isChainOn = edit ? !!edit.isChain : false;
@@ -972,44 +1147,47 @@ function openRestModal(edit) {
   ).join('');
   document.getElementById('rest-modal').classList.add('open');
   setTimeout(() => document.getElementById('r-name').focus(), 50);
-}
-function openEditRestModal(id) {
+};
+window.openEditRestModal = function(id) {
   const r = restaurants.find(x => x.id === id);
   if (r) openRestModal(r);
-}
-function closeRestModal() { document.getElementById('rest-modal').classList.remove('open'); }
-function toggleChainCheck() {
+};
+window.closeRestModal = function() { document.getElementById('rest-modal').classList.remove('open'); };
+window.toggleChainCheck = function() {
   isChainOn = !isChainOn;
   document.getElementById('chain-chk').classList.toggle('checked-chain', isChainOn);
   document.getElementById('chain-name-wrap').classList.toggle('show', isChainOn);
   if (isChainOn) document.getElementById('r-chain-name').focus();
-}
-function addRestTag() {
+};
+window.addRestTag = function() {
   const inp = document.getElementById('rest-tag-input');
   const v = inp.value.trim(); if (!v || restModalTags.includes(v)) { inp.value=''; return; }
   restModalTags.push(v); inp.value=''; renderRestTags();
-}
-function addRestHintTag(t) { if (!restModalTags.includes(t)) { restModalTags.push(t); renderRestTags(); } }
-function removeRestTag(t) { restModalTags = restModalTags.filter(x=>x!==t); renderRestTags(); }
+};
+window.addRestHintTag = function(t) { if (!restModalTags.includes(t)) { restModalTags.push(t); renderRestTags(); } };
+window.removeRestTag = function(t) { restModalTags = restModalTags.filter(x=>x!==t); renderRestTags(); };
 function renderRestTags() {
   document.getElementById('rest-tag-list').innerHTML = restModalTags.map(t => {
     const s = tagStyle(t);
     return `<span class="tag-removable" style="background:${s.bg};color:${s.color}" onclick="removeRestTag('${t}')"><span>${t}</span><span style="margin-left:3px;font-size:11px">✕</span></span>`;
   }).join('');
 }
-function saveRest() {
+window.saveRest = async function() {
   const name = document.getElementById('r-name').value.trim();
   if (!name) { document.getElementById('r-name').style.borderColor='var(--rest)'; document.getElementById('r-name').focus(); return; }
   const chainName = isChainOn ? document.getElementById('r-chain-name').value.trim() : '';
   const memo = document.getElementById('r-memo').value.trim();
+  let restData;
   if (editingRestId) {
     const r = restaurants.find(x => x.id === editingRestId);
-    if (r) { r.name = name; r.tags = [...restModalTags]; r.isChain = isChainOn; r.chainName = chainName; r.memo = memo; }
+    if (r) { r.name = name; r.tags = [...restModalTags]; r.isChain = isChainOn; r.chainName = chainName; r.memo = memo; restData = r; }
   } else {
-    restaurants.push({ id: nextRestId++, name, tags:[...restModalTags], isChain: isChainOn, chainName, memo, addedAt: Date.now() });
+    restData = { id: nextRestId++, name, tags:[...restModalTags], isChain: isChainOn, chainName, memo, addedAt: Date.now() };
+    restaurants.push(restData);
   }
+  if (restData) await fsSet('restaurants', restData.id, { id: restData.id, name: restData.name, tags: restData.tags, isChain: restData.isChain, chainName: restData.chainName, memo: restData.memo, addedAt: restData.addedAt });
   closeRestModal(); renderRest();
-}
+};
 
 // ──────────────── Prefecture Map ────────────────
 const PREF_GRID = [
@@ -1058,7 +1236,7 @@ function buildMap() {
   svg.innerHTML = html;
 }
 
-function togglePref(name) {
+window.togglePref = async function(name) {
   if (visitedPrefs.has(name)) visitedPrefs.delete(name);
   else visitedPrefs.add(name);
   document.querySelectorAll(`[data-pref="${name}"]`).forEach(el => {
@@ -1069,15 +1247,16 @@ function togglePref(name) {
       if (text) text.setAttribute('fill', visitedPrefs.has(name) ? '#fff' : '#6b4fb8');
     }
   });
+  await fsSet('settings', 'prefs', { visited: [...visitedPrefs] });
   updatePrefStats(); renderRegionChecklist();
-}
+};
 
-function showTip(e, name) {
+window.showTip = function(e, name) {
   const t = document.getElementById('pref-tooltip');
   t.textContent = (visitedPrefs.has(name) ? '✓ 訪問済み — ' : '○ 未訪問 — ') + name;
   t.classList.add('show');
-}
-function hideTip() { document.getElementById('pref-tooltip').classList.remove('show'); }
+};
+window.hideTip = function() { document.getElementById('pref-tooltip').classList.remove('show'); };
 document.addEventListener('mousemove', e => {
   const t = document.getElementById('pref-tooltip');
   if (t.classList.contains('show')) { t.style.left=(e.clientX+14)+'px'; t.style.top=(e.clientY-30)+'px'; }
@@ -1102,47 +1281,8 @@ function renderRegionChecklist() {
   ).join('');
 }
 
-// ──────────────── Init ────────────────
-renderTagFilters();
-renderMovies();
-renderPlacePrefFilters();
-renderPlaces();
-renderRest();
-buildMap();
-updatePrefStats();
-renderRegionChecklist();
-</script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-  import { getFirestore, addDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+window.renderRegionChecklist = renderRegionChecklist;
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAAeT9zLfPL91LV6Uykl4vdx9fCny3AGBE",
-    authDomain: "database-tkfamily0606.firebaseapp.com",
-    projectId: "database-tkfamily0606",
-    storageBucket: "database-tkfamily0606.firebasestorage.app",
-    messagingSenderId: "571512449505",
-    appId: "1:571512449505:web:3e9001d9d9b2b94212caa0",
-    measurementId: "G-DSZKEE07WP"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  async function saveData() {
-    const title = document.getElementById("title").value;
-    const memo = document.getElementById("memo").value;
-
-    await addDoc(collection(db, "records"), {
-      title: title,
-      memo: memo,
-      createdAt: new Date()
-    });
-
-    alert("保存できた！");
-  }
-
-  window.saveData = saveData;
 </script>
 </body>
 </html>
