@@ -1112,5 +1112,37 @@ buildMap();
 updatePrefStats();
 renderRegionChecklist();
 </script>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getFirestore, addDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAAeT9zLfPL91LV6Uykl4vdx9fCny3AGBE",
+    authDomain: "database-tkfamily0606.firebaseapp.com",
+    projectId: "database-tkfamily0606",
+    storageBucket: "database-tkfamily0606.firebasestorage.app",
+    messagingSenderId: "571512449505",
+    appId: "1:571512449505:web:3e9001d9d9b2b94212caa0",
+    measurementId: "G-DSZKEE07WP"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  async function saveData() {
+    const title = document.getElementById("title").value;
+    const memo = document.getElementById("memo").value;
+
+    await addDoc(collection(db, "records"), {
+      title: title,
+      memo: memo,
+      createdAt: new Date()
+    });
+
+    alert("保存できた！");
+  }
+
+  window.saveData = saveData;
+</script>
 </body>
 </html>
