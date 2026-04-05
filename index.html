@@ -42,6 +42,16 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', s
 #save-status.ok { background: var(--rest); }
 #save-status.err { background: #dc2626; }
 
+/* LAST UPDATED BAR */
+#last-updated-bar { background: var(--surface2); border-bottom: 1px solid var(--border); text-align: center; padding: 5px 16px; font-size: 11px; color: var(--text3); letter-spacing: 0.03em; display: none; }
+#last-updated-bar.show { display: block; }
+
+/* YEAR FILTER */
+.year-filter-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.year-filter-btn { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
+.year-filter-btn:hover { border-color: var(--panel-c, #888); color: var(--text); }
+.year-filter-btn.active { background: var(--panel-c, #888); border-color: var(--panel-c, #888); color: #fff; font-weight: 700; }
+
 /* LOADING */
 #loading-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9998; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
 .loading-logo { font-family: 'Noto Serif JP', serif; font-size: 20px; font-weight: 900; color: var(--movie); }
@@ -123,12 +133,12 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 /* ITEM CARDS */
 .item-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; transition: all 0.15s; position: relative; display: flex; flex-direction: column; }
 .item-card:hover { border-color: var(--panel-c, #888); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.09); }
-.item-thumb { width: 100%; height: 110px; object-fit: cover; display: block; background: var(--surface2); flex-shrink: 0; }
-.item-thumb-placeholder { width: 100%; height: 110px; display: flex; align-items: center; justify-content: center; background: var(--surface2); flex-shrink: 0; cursor: pointer; transition: background 0.15s; position: relative; overflow: hidden; }
+.item-thumb { width: 100%; height: 72px; object-fit: cover; display: block; background: var(--surface2); flex-shrink: 0; cursor: pointer; }
+.item-thumb-placeholder { width: 100%; height: 72px; display: flex; align-items: center; justify-content: center; background: var(--surface2); flex-shrink: 0; cursor: pointer; transition: background 0.15s; position: relative; overflow: hidden; }
 .item-thumb-placeholder:hover { background: var(--border); }
-.item-thumb-placeholder-label { font-size: 11px; color: var(--text3); display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none; }
-.item-thumb-placeholder-label span { font-size: 20px; }
-.item-body { padding: 11px 13px 12px; flex: 1; }
+.item-thumb-placeholder-label { font-size: 11px; color: var(--text3); display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; }
+.item-thumb-placeholder-label span { font-size: 18px; }
+.item-body { padding: 8px 10px 10px; flex: 1; }
 .item-name { font-size: 13px; font-weight: 700; line-height: 1.45; color: var(--text); padding-right: 38px; }
 .item-sub { font-size: 11px; color: var(--text2); margin-top: 5px; display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
 .chain-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 20px; background: var(--chain-bg); color: var(--chain); border: 1px solid var(--chain-border); }
@@ -230,6 +240,9 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 
 <div class="pref-tooltip" id="pref-tooltip"></div>
 
+<!-- LAST UPDATED BAR -->
+<div id="last-updated-bar">最終更新：<span id="last-updated-text">—</span></div>
+
 <!-- SAVE STATUS TOAST -->
 <div id="save-status"></div>
 
@@ -304,9 +317,11 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
       <option value="added">追加順</option>
       <option value="name">名前順</option>
       <option value="pref">都道府県順</option>
+      <option value="visited">訪問年順</option>
     </select>
   </div>
   <div class="place-filter-wrap" id="place-pref-filters"></div>
+  <div class="year-filter-wrap" id="place-year-filters" style="--panel-c:var(--place)"></div>
   <div class="cards-grid" id="places-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
 </section>
 
@@ -336,6 +351,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="rest-filter-btn" data-f="chain" onclick="setRestFilter(this)">🔗 チェーン店のみ</button>
     <button class="rest-filter-btn" data-f="local" onclick="setRestFilter(this)">🏠 個人店のみ</button>
   </div>
+  <div class="year-filter-wrap" id="rest-year-filters" style="--panel-c:var(--rest)"></div>
   <div class="cards-grid" id="rest-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
 </section>
 
@@ -437,6 +453,21 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
       </select>
     </div>
     <div class="form-group">
+      <label class="form-label">訪問年月</label>
+      <div style="display:flex;gap:8px">
+        <select class="form-select" id="p-year" style="flex:1">
+          <option value="">年</option>
+        </select>
+        <select class="form-select" id="p-month" style="flex:1">
+          <option value="">月</option>
+          <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+          <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+          <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+          <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
       <label class="form-label">メモ</label>
       <input class="form-input" id="p-memo" placeholder="任意のメモ…">
     </div>
@@ -479,6 +510,21 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <div class="form-group">
       <label class="form-label">メモ</label>
       <input class="form-input" id="r-memo" placeholder="任意のメモ…">
+    </div>
+    <div class="form-group">
+      <label class="form-label">訪問年月</label>
+      <div style="display:flex;gap:8px">
+        <select class="form-select" id="r-year" style="flex:1">
+          <option value="">年</option>
+        </select>
+        <select class="form-select" id="r-month" style="flex:1">
+          <option value="">月</option>
+          <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+          <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+          <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+          <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+        </select>
+      </div>
     </div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeRestModal()">キャンセル</button>
@@ -640,6 +686,19 @@ function showSaveStatus(ok, msg) {
   el.className = 'show ' + (ok ? 'ok' : 'err');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => { el.className = ''; }, 2500);
+  if (ok) {
+    const now = new Date();
+    const fmt = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    document.getElementById('last-updated-text').textContent = fmt;
+    document.getElementById('last-updated-bar').classList.add('show');
+    try { localStorage.setItem('lastUpdated', fmt); } catch(e) {}
+  }
+}
+function initLastUpdated() {
+  try {
+    const v = localStorage.getItem('lastUpdated');
+    if (v) { document.getElementById('last-updated-text').textContent = v; document.getElementById('last-updated-bar').classList.add('show'); }
+  } catch(e) {}
 }
 
 // ──────────────── Firestore helpers ────────────────
@@ -706,22 +765,22 @@ async function loadFirestoreData() {
   // places
   const placesData = await fsGet('places');
   if (placesData && placesData.length > 0) {
-    places = placesData.map(d => ({ id: d.id, name: d.name||'', pref: d.pref||'', memo: d.memo||'', addedAt: d.addedAt||0 }));
+    places = placesData.map(d => ({ id: d.id, name: d.name||'', pref: d.pref||'', memo: d.memo||'', visitYear: d.visitYear||null, visitMonth: d.visitMonth||null, addedAt: d.addedAt||0 }));
     nextPlaceId = Math.max(...places.map(p => p.id), 0) + 1;
   } else {
     places = getDefaultPlaces();
     nextPlaceId = places.length + 1;
-    for (const p of places) await fsSet('places', p.id, { id: p.id, name: p.name, pref: p.pref, memo: p.memo, addedAt: p.addedAt });
+    for (const p of places) await fsSet('places', p.id, { id: p.id, name: p.name, pref: p.pref, memo: p.memo, visitYear: null, visitMonth: null, addedAt: p.addedAt });
   }
   // restaurants
   const restData = await fsGet('restaurants');
   if (restData && restData.length > 0) {
-    restaurants = restData.map(d => ({ id: d.id, name: d.name||'', tags: d.tags||[], isChain: !!d.isChain, chainName: d.chainName||'', memo: d.memo||'', addedAt: d.addedAt||0 }));
+    restaurants = restData.map(d => ({ id: d.id, name: d.name||'', tags: d.tags||[], isChain: !!d.isChain, chainName: d.chainName||'', memo: d.memo||'', visitYear: d.visitYear||null, visitMonth: d.visitMonth||null, addedAt: d.addedAt||0 }));
     nextRestId = Math.max(...restaurants.map(r => r.id), 0) + 1;
   } else {
     restaurants = getDefaultRestaurants();
     nextRestId = restaurants.length + 1;
-    for (const r of restaurants) await fsSet('restaurants', r.id, { id: r.id, name: r.name, tags: r.tags, isChain: r.isChain, chainName: r.chainName, memo: r.memo, addedAt: r.addedAt });
+    for (const r of restaurants) await fsSet('restaurants', r.id, { id: r.id, name: r.name, tags: r.tags, isChain: r.isChain, chainName: r.chainName, memo: r.memo, visitYear: null, visitMonth: null, addedAt: r.addedAt });
   }
   // prefs
   const prefsDoc = await (async () => { try { const d = await getDoc(doc(db, 'settings', 'prefs')); return d.exists() ? d.data() : null; } catch(e) { return null; } })();
@@ -738,6 +797,8 @@ initAndLoad();
 
 // ──────────────── App State ────────────────
 let activeTagFilter = 'all';
+let activeYearFilterPlace = 'all';
+let activeYearFilterRest = 'all';
 let modalStar = 0;
 let modalTags = [];
 let isSeriesOn = false;
@@ -753,6 +814,8 @@ let pendingImgTarget = null;
 
 // ──────────────── Init App ────────────────
 function initApp() {
+  initLastUpdated();
+  populateYearSelects();
   renderTagFilters();
   renderMovies();
   renderPlacePrefFilters();
@@ -761,6 +824,18 @@ function initApp() {
   buildMap();
   updatePrefStats();
   renderRegionChecklist();
+}
+
+function populateYearSelects() {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = currentYear; y >= 2010; y--) years.push(y);
+  ['p-year','r-year'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">年</option>` + years.map(y => `<option value="${y}"${y==cur?' selected':''}>${y}年</option>`).join('');
+  });
 }
 
 // ──────────────── Tabs ────────────────
@@ -973,6 +1048,11 @@ function getPlacePrefList() {
   places.forEach(p => { if (p.pref) s.add(p.pref); });
   return [...s].sort((a,b) => ALL_PREFS.indexOf(a) - ALL_PREFS.indexOf(b));
 }
+function getPlaceYearList() {
+  const s = new Set();
+  places.forEach(p => { if (p.visitYear) s.add(p.visitYear); });
+  return [...s].sort((a,b) => b - a);
+}
 function renderPlacePrefFilters() {
   const prefs = getPlacePrefList();
   const wrap = document.getElementById('place-pref-filters');
@@ -984,9 +1064,24 @@ function renderPlacePrefFilters() {
       `<button class="place-filter-btn${activePlacePrefFilter===p?' active':''}" data-pf="${p}" onclick="setPlacePrefFilter(this)">${p}</button>`
     ).join('');
 }
+function renderPlaceYearFilters() {
+  const years = getPlaceYearList();
+  const wrap = document.getElementById('place-year-filters');
+  if (!years.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML =
+    `<span class="tag-filter-label">訪問年：</span>` +
+    `<button class="year-filter-btn${activeYearFilterPlace==='all'?' active':''}" data-yr="all" onclick="setPlaceYearFilter(this)">すべて</button>` +
+    years.map(y =>
+      `<button class="year-filter-btn${activeYearFilterPlace==y?' active':''}" data-yr="${y}" onclick="setPlaceYearFilter(this)">${y}年</button>`
+    ).join('');
+}
 window.setPlacePrefFilter = function(btn) {
   activePlacePrefFilter = btn.dataset.pf;
   renderPlacePrefFilters(); renderPlaces();
+};
+window.setPlaceYearFilter = function(btn) {
+  activeYearFilterPlace = btn.dataset.yr;
+  renderPlaceYearFilters(); renderPlaces();
 };
 function renderPlaces() {
   const q = document.querySelector('#places-panel .search-wrap input').value.trim().toLowerCase();
@@ -994,13 +1089,19 @@ function renderPlaces() {
   let list = places.filter(p => {
     const matchQ = !q || p.name.toLowerCase().includes(q) || (p.pref && p.pref.includes(q));
     const matchPref = activePlacePrefFilter === 'all' || p.pref === activePlacePrefFilter;
-    return matchQ && matchPref;
+    const matchYear = activeYearFilterPlace === 'all' || String(p.visitYear) === String(activeYearFilterPlace);
+    return matchQ && matchPref && matchYear;
   });
   if (sortVal === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
   else if (sortVal === 'pref') list = [...list].sort((a,b) => {
     const ai = ALL_PREFS.indexOf(a.pref), bi = ALL_PREFS.indexOf(b.pref);
     if (ai < 0 && bi < 0) return 0; if (ai < 0) return 1; if (bi < 0) return -1;
     return ai - bi || a.name.localeCompare(b.name,'ja');
+  });
+  else if (sortVal === 'visited') list = [...list].sort((a,b) => {
+    const ay = (a.visitYear||0)*100+(a.visitMonth||0);
+    const by2 = (b.visitYear||0)*100+(b.visitMonth||0);
+    return by2 - ay;
   });
   else list = [...list].sort((a,b) => a.addedAt - b.addedAt);
 
@@ -1011,8 +1112,9 @@ function renderPlaces() {
     const thumb = img
       ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('place',${p.id})" style="cursor:pointer">`
       : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('place',${p.id})">
-           <div class="item-thumb-placeholder-label"><span>🖼️</span>写真を追加</div>
+           <div class="item-thumb-placeholder-label"><span>📍</span>写真</div>
          </div>`;
+    const visitLabel = p.visitYear ? `<span style="font-size:10px;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:10px">${p.visitYear}年${p.visitMonth?p.visitMonth+'月':''}</span>` : '';
     return `<div class="item-card" style="--panel-c:var(--place)">
       <div class="card-actions">
         <button class="card-action-btn edit" onclick="openEditPlaceModal(${p.id})" title="編集">✏️</button>
@@ -1023,6 +1125,7 @@ function renderPlaces() {
         <div class="item-name">${p.name}</div>
         <div class="item-sub">
           ${p.pref ? `<span class="pref-badge">🗾 ${p.pref}</span>` : ''}
+          ${visitLabel}
           ${p.memo ? `<span style="color:var(--text3);font-style:italic;font-size:11px">${p.memo}</span>` : ''}
         </div>
       </div>
@@ -1030,6 +1133,7 @@ function renderPlaces() {
   }).join('');
   document.getElementById('places-meta').textContent = `全 ${places.length} 箇所`;
   document.getElementById('cnt-places').textContent = places.length;
+  renderPlaceYearFilters();
 }
 
 // Place Modal
@@ -1038,9 +1142,20 @@ function populatePrefSelect(selId, val) {
   sel.innerHTML = `<option value="">── 選択してください ──</option>` +
     ALL_PREFS.map(p => `<option value="${p}"${p===val?' selected':''}>${p}</option>`).join('');
 }
+function populateYearSelect(selId, val) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let y = currentYear; y >= 2010; y--) years.push(y);
+  sel.innerHTML = `<option value="">年</option>` + years.map(y => `<option value="${y}"${y==val?' selected':''}>${y}年</option>`).join('');
+}
 window.openPlaceModal = function(edit) {
   editingPlaceId = edit ? edit.id : null;
   populatePrefSelect('p-pref', edit ? (edit.pref||'') : '');
+  populateYearSelect('p-year', edit ? (edit.visitYear||'') : '');
+  const mSel = document.getElementById('p-month');
+  mSel.value = edit ? (edit.visitMonth||'') : '';
   document.getElementById('p-name').value = edit ? edit.name : '';
   document.getElementById('p-memo').value = edit ? (edit.memo||'') : '';
   document.getElementById('place-modal-title').textContent = edit ? '✏️ スポットを編集' : '📍 スポットを追加';
@@ -1057,15 +1172,17 @@ window.savePlace = async function() {
   if (!name) { document.getElementById('p-name').style.borderColor='var(--place)'; document.getElementById('p-name').focus(); return; }
   const pref = document.getElementById('p-pref').value;
   const memo = document.getElementById('p-memo').value.trim();
+  const visitYear = parseInt(document.getElementById('p-year').value) || null;
+  const visitMonth = parseInt(document.getElementById('p-month').value) || null;
   let placeData;
   if (editingPlaceId) {
     const p = places.find(x => x.id === editingPlaceId);
-    if (p) { p.name = name; p.pref = pref; p.memo = memo; placeData = p; }
+    if (p) { p.name = name; p.pref = pref; p.memo = memo; p.visitYear = visitYear; p.visitMonth = visitMonth; placeData = p; }
   } else {
-    placeData = { id: nextPlaceId++, name, pref, memo, addedAt: Date.now() };
+    placeData = { id: nextPlaceId++, name, pref, memo, visitYear, visitMonth, addedAt: Date.now() };
     places.push(placeData);
   }
-  if (placeData) await fsSet('places', placeData.id, { id: placeData.id, name: placeData.name, pref: placeData.pref, memo: placeData.memo, addedAt: placeData.addedAt });
+  if (placeData) await fsSet('places', placeData.id, { id: placeData.id, name: placeData.name, pref: placeData.pref, memo: placeData.memo, visitYear: placeData.visitYear||null, visitMonth: placeData.visitMonth||null, addedAt: placeData.addedAt });
   closePlaceModal(); renderPlacePrefFilters(); renderPlaces();
 };
 
@@ -1080,13 +1197,35 @@ window.setRestFilter = function(btn) {
   renderRest();
 };
 
+function getRestYearList() {
+  const s = new Set();
+  restaurants.forEach(r => { if (r.visitYear) s.add(r.visitYear); });
+  return [...s].sort((a,b) => b - a);
+}
+function renderRestYearFilters() {
+  const years = getRestYearList();
+  const wrap = document.getElementById('rest-year-filters');
+  if (!years.length) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML =
+    `<span class="tag-filter-label">訪問年：</span>` +
+    `<button class="year-filter-btn${activeYearFilterRest==='all'?' active':''}" data-yr="all" onclick="setRestYearFilter(this)">すべて</button>` +
+    years.map(y =>
+      `<button class="year-filter-btn${activeYearFilterRest==y?' active':''}" data-yr="${y}" onclick="setRestYearFilter(this)">${y}年</button>`
+    ).join('');
+}
+window.setRestYearFilter = function(btn) {
+  activeYearFilterRest = btn.dataset.yr;
+  renderRestYearFilters(); renderRest();
+};
+
 function renderRest() {
   const q = document.querySelector('#rest-panel .search-wrap input').value.trim().toLowerCase();
   const sortVal = document.getElementById('rest-sort').value;
   let list = restaurants.filter(r => {
     const matchQ = !q || r.name.toLowerCase().includes(q) || (r.chainName && r.chainName.toLowerCase().includes(q));
     const matchF = activeRestFilter === 'all' || (activeRestFilter === 'chain' && r.isChain) || (activeRestFilter === 'local' && !r.isChain);
-    return matchQ && matchF;
+    const matchYear = activeYearFilterRest === 'all' || String(r.visitYear) === String(activeYearFilterRest);
+    return matchQ && matchF && matchYear;
   });
   if (sortVal === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
   else if (sortVal === 'tag') list = [...list].sort((a,b) => {
@@ -1107,8 +1246,9 @@ function renderRest() {
     const thumb = img
       ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('rest',${r.id})" style="cursor:pointer">`
       : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('rest',${r.id})">
-           <div class="item-thumb-placeholder-label"><span>🖼️</span>写真を追加</div>
+           <div class="item-thumb-placeholder-label"><span>🍽️</span>写真</div>
          </div>`;
+    const visitLabel = r.visitYear ? `<span style="font-size:10px;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:10px">${r.visitYear}年${r.visitMonth?r.visitMonth+'月':''}</span>` : '';
     return `<div class="item-card" style="--panel-c:var(--rest)">
       <div class="card-actions">
         <button class="card-action-btn edit" onclick="openEditRestModal(${r.id})" title="編集">✏️</button>
@@ -1120,6 +1260,7 @@ function renderRest() {
         <div class="item-sub">
           ${r.isChain ? `<span class="chain-badge">🔗 ${r.chainName||'チェーン店'}</span>` : ''}
           ${tagChips || ''}
+          ${visitLabel}
           ${r.memo ? `<span style="color:var(--text3);font-style:italic;font-size:11px">${r.memo}</span>` : ''}
         </div>
       </div>
@@ -1128,6 +1269,7 @@ function renderRest() {
   const chainCount = restaurants.filter(r => r.isChain).length;
   document.getElementById('rest-meta').textContent = `全 ${restaurants.length} 店舗　|　チェーン店 ${chainCount} 店`;
   document.getElementById('cnt-rest').textContent = restaurants.length;
+  renderRestYearFilters();
 }
 
 // Rest Modal
@@ -1138,6 +1280,9 @@ window.openRestModal = function(edit) {
   document.getElementById('r-name').value = edit ? edit.name : '';
   document.getElementById('r-chain-name').value = edit ? (edit.chainName||'') : '';
   document.getElementById('r-memo').value = edit ? (edit.memo||'') : '';
+  populateYearSelect('r-year', edit ? (edit.visitYear||'') : '');
+  const mSel = document.getElementById('r-month');
+  mSel.value = edit ? (edit.visitMonth||'') : '';
   document.getElementById('chain-chk').classList.toggle('checked-chain', isChainOn);
   document.getElementById('chain-name-wrap').classList.toggle('show', isChainOn);
   document.getElementById('rest-modal-title').textContent = edit ? '✏️ 飲食店を編集' : '🍽️ 飲食店を追加';
@@ -1177,15 +1322,17 @@ window.saveRest = async function() {
   if (!name) { document.getElementById('r-name').style.borderColor='var(--rest)'; document.getElementById('r-name').focus(); return; }
   const chainName = isChainOn ? document.getElementById('r-chain-name').value.trim() : '';
   const memo = document.getElementById('r-memo').value.trim();
+  const visitYear = parseInt(document.getElementById('r-year').value) || null;
+  const visitMonth = parseInt(document.getElementById('r-month').value) || null;
   let restData;
   if (editingRestId) {
     const r = restaurants.find(x => x.id === editingRestId);
-    if (r) { r.name = name; r.tags = [...restModalTags]; r.isChain = isChainOn; r.chainName = chainName; r.memo = memo; restData = r; }
+    if (r) { r.name = name; r.tags = [...restModalTags]; r.isChain = isChainOn; r.chainName = chainName; r.memo = memo; r.visitYear = visitYear; r.visitMonth = visitMonth; restData = r; }
   } else {
-    restData = { id: nextRestId++, name, tags:[...restModalTags], isChain: isChainOn, chainName, memo, addedAt: Date.now() };
+    restData = { id: nextRestId++, name, tags:[...restModalTags], isChain: isChainOn, chainName, memo, visitYear, visitMonth, addedAt: Date.now() };
     restaurants.push(restData);
   }
-  if (restData) await fsSet('restaurants', restData.id, { id: restData.id, name: restData.name, tags: restData.tags, isChain: restData.isChain, chainName: restData.chainName, memo: restData.memo, addedAt: restData.addedAt });
+  if (restData) await fsSet('restaurants', restData.id, { id: restData.id, name: restData.name, tags: restData.tags, isChain: restData.isChain, chainName: restData.chainName, memo: restData.memo, visitYear: restData.visitYear||null, visitMonth: restData.visitMonth||null, addedAt: restData.addedAt });
   closeRestModal(); renderRest();
 };
 
