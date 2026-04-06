@@ -56,6 +56,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Noto Sans JP', s
 #loading-screen { position: fixed; inset: 0; background: var(--bg); z-index: 9998; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
 .loading-logo { font-family: 'Noto Serif JP', serif; font-size: 20px; font-weight: 900; color: var(--movie); }
 .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--movie); border-radius: 50%; animation: spin 0.8s linear infinite; }
+.loading-spinner-sm { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--text3); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-msg { font-size: 13px; color: var(--text2); }
 
@@ -85,11 +86,6 @@ main { max-width: 1280px; margin: 0 auto; padding: 28px 20px; }
 
 /* TOOLBAR */
 .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-.search-wrap { position: relative; flex: 1; min-width: 180px; }
-.search-wrap input { width: 100%; background: var(--white); border: 1.5px solid var(--border); border-radius: 8px; padding: 9px 12px 9px 36px; color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 13px; outline: none; transition: border-color 0.15s; }
-.search-wrap input:focus { border-color: var(--panel-c, var(--movie)); }
-.search-wrap input::placeholder { color: var(--text3); }
-.search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 15px; pointer-events: none; }
 select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--white); font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: var(--text); cursor: pointer; outline: none; }
 
 /* TAG FILTERS */
@@ -285,10 +281,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="add-btn" onclick="openMovieModal()">＋ 映画を追加</button>
   </div>
   <div class="toolbar">
-    <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="text" placeholder="タイトルで検索…" oninput="renderMovies()">
-    </div>
     <select class="sort-sel" onchange="renderMovies()" id="movie-sort">
       <option value="title">タイトル順</option>
       <option value="rating">評価順</option>
@@ -309,10 +301,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="add-btn place-btn" onclick="openPlaceModal()">＋ スポットを追加</button>
   </div>
   <div class="toolbar">
-    <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="text" placeholder="スポット名・都道府県で検索…" oninput="renderPlaces()">
-    </div>
     <select class="sort-sel" onchange="renderPlaces()" id="place-sort">
       <option value="added">追加順</option>
       <option value="name">名前順</option>
@@ -335,10 +323,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="add-btn rest-btn" onclick="openRestModal()">＋ 飲食店を追加</button>
   </div>
   <div class="toolbar">
-    <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input type="text" placeholder="店名で検索…" oninput="renderRest()">
-    </div>
     <select class="sort-sel" onchange="renderRest()" id="rest-sort">
       <option value="added">追加順</option>
       <option value="name">名前順</option>
@@ -555,6 +539,9 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import {
   getFirestore, collection, doc, getDocs, setDoc, deleteDoc, getDoc
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import {
+  getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
 // ──────────────── Tag palette ────────────────
 const PALETTES = [
@@ -593,6 +580,7 @@ const FIREBASE_CONFIG = {
 
 // ──────────────── Firebase state ────────────────
 let db = null;
+let storage = null;
 
 // ──────────────── Data ────────────────
 let movies = [];
@@ -739,6 +727,7 @@ async function initAndLoad() {
   try {
     const app = initializeApp(FIREBASE_CONFIG);
     db = getFirestore(app);
+    storage = getStorage(app);
     await loadFirestoreData();
   } catch(e) {
     console.error('Firebase接続エラー:', e);
@@ -747,14 +736,14 @@ async function initAndLoad() {
     return;
   }
   ls.style.display = 'none';
-  initApp();
+  await initApp();
 }
 
 async function loadFirestoreData() {
   // movies
   const moviesData = await fsGet('movies');
   if (moviesData && moviesData.length > 0) {
-    movies = moviesData.map(d => ({ id: d.id, title: d.title||'', rating: d.rating||0, tags: d.tags||[], series: d.series||'', memo: d.memo||'', addedAt: d.addedAt||0 }));
+    movies = moviesData.map(d => ({ id: d.id, title: d.title||'', rating: Number(d.rating)||0, tags: d.tags||[], series: d.series||'', memo: d.memo||'', addedAt: d.addedAt||0 }));
     nextMovieId = Math.max(...movies.map(m => m.id), 0) + 1;
   } else {
     movies = getDefaultMovies();
@@ -813,9 +802,10 @@ let pendingDelete = null;
 let pendingImgTarget = null;
 
 // ──────────────── Init App ────────────────
-function initApp() {
+async function initApp() {
   initLastUpdated();
   populateYearSelects();
+  await loadAllImages();
   renderTagFilters();
   renderMovies();
   renderPlacePrefFilters();
@@ -862,10 +852,14 @@ window.confirmDelete = async function() {
     renderTagFilters(); renderMovies();
   } else if (type === 'place') {
     places = places.filter(p => p.id !== id);
+    delete placeImages[id];
+    await deleteImg('place', id);
     await fsDel('places', id);
     renderPlaces();
   } else if (type === 'rest') {
     restaurants = restaurants.filter(r => r.id !== id);
+    delete restImages[id];
+    await deleteImg('rest', id);
     await fsDel('restaurants', id);
     renderRest();
   }
@@ -910,20 +904,18 @@ function starsHTML(rating, id) {
 }
 
 function renderMovies() {
-  const q = document.querySelector('#movies-panel .search-wrap input').value.trim().toLowerCase();
   const sortVal = document.getElementById('movie-sort').value;
   let list = movies.filter(m => {
-    if (q && !m.title.toLowerCase().includes(q) && !(m.series||'').toLowerCase().includes(q)) return false;
     if (activeTagFilter === 'all') return true;
     if (activeTagFilter === 'series') return !!m.series;
     return m.tags.includes(activeTagFilter);
   });
-  if (sortVal === 'rating') list = [...list].sort((a,b) => (b.rating||0)-(a.rating||0));
-  else if (sortVal === 'added') list = [...list].sort((a,b) => b.addedAt-a.addedAt);
+  if (sortVal === 'rating') list = [...list].sort((a,b) => (Number(b.rating)||0) - (Number(a.rating)||0) || a.title.localeCompare(b.title,'ja'));
+  else if (sortVal === 'added') list = [...list].sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
   else list = [...list].sort((a,b) => a.title.localeCompare(b.title,'ja'));
 
   const grid = document.getElementById('movies-grid');
-  if (!list.length) { grid.innerHTML = `<div class="no-results">「${q||activeTagFilter}」の結果がありません</div>`; return; }
+  if (!list.length) { grid.innerHTML = `<div class="no-results">該当なし</div>`; return; }
 
   grid.innerHTML = list.map(m => {
     const tagChips = m.tags.map(t => {
@@ -1026,22 +1018,58 @@ window.saveMovie = async function() {
 };
 
 // ──────────────── Places ────────────────
-window.handleImgUpload = function(e, type) {
+// ── Image storage via Firebase Storage ──
+function imgStoragePath(type, id) { return `images/${type}/${id}`; }
+
+window.handleImgUpload = async function(e, type) {
   const file = e.target.files[0];
-  if (!file || !pendingImgTarget) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    if (type === 'place') { placeImages[pendingImgTarget.id] = ev.target.result; renderPlaces(); }
-    else { restImages[pendingImgTarget.id] = ev.target.result; renderRest(); }
-    e.target.value = '';
-    pendingImgTarget = null;
-  };
-  reader.readAsDataURL(file);
+  if (!file || !pendingImgTarget || !storage) return;
+  const targetId = pendingImgTarget.id;
+  e.target.value = '';
+  pendingImgTarget = null;
+  // show loading placeholder
+  if (type === 'place') { placeImages[targetId] = '__loading__'; renderPlaces(); }
+  else { restImages[targetId] = '__loading__'; renderRest(); }
+  try {
+    const path = imgStoragePath(type, targetId);
+    const sRef = storageRef(storage, path);
+    await uploadBytes(sRef, file);
+    const url = await getDownloadURL(sRef);
+    if (type === 'place') { placeImages[targetId] = url; renderPlaces(); }
+    else { restImages[targetId] = url; renderRest(); }
+    showSaveStatus(true, '✓ 画像を保存しました');
+  } catch(err) {
+    console.error('画像アップロード失敗:', err);
+    if (type === 'place') { delete placeImages[targetId]; renderPlaces(); }
+    else { delete restImages[targetId]; renderRest(); }
+    showSaveStatus(false, '画像の保存に失敗しました');
+  }
 };
 window.triggerImgUpload = function(type, id) {
   pendingImgTarget = { type, id };
   document.getElementById(type + '-img-input').click();
 };
+async function deleteImg(type, id) {
+  if (!storage) return;
+  try {
+    const sRef = storageRef(storage, imgStoragePath(type, id));
+    await deleteObject(sRef);
+  } catch(e) { /* ファイルが存在しない場合は無視 */ }
+}
+async function loadAllImages() {
+  if (!storage) return;
+  const all = [
+    ...places.map(p => ({ type: 'place', id: p.id })),
+    ...restaurants.map(r => ({ type: 'rest', id: r.id }))
+  ];
+  await Promise.all(all.map(async ({ type, id }) => {
+    try {
+      const url = await getDownloadURL(storageRef(storage, imgStoragePath(type, id)));
+      if (type === 'place') placeImages[id] = url;
+      else restImages[id] = url;
+    } catch(e) { /* 画像なし */ }
+  }));
+}
 
 function getPlacePrefList() {
   const s = new Set();
@@ -1084,13 +1112,11 @@ window.setPlaceYearFilter = function(btn) {
   renderPlaceYearFilters(); renderPlaces();
 };
 function renderPlaces() {
-  const q = document.querySelector('#places-panel .search-wrap input').value.trim().toLowerCase();
   const sortVal = document.getElementById('place-sort').value;
   let list = places.filter(p => {
-    const matchQ = !q || p.name.toLowerCase().includes(q) || (p.pref && p.pref.includes(q));
     const matchPref = activePlacePrefFilter === 'all' || p.pref === activePlacePrefFilter;
     const matchYear = activeYearFilterPlace === 'all' || String(p.visitYear) === String(activeYearFilterPlace);
-    return matchQ && matchPref && matchYear;
+    return matchPref && matchYear;
   });
   if (sortVal === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
   else if (sortVal === 'pref') list = [...list].sort((a,b) => {
@@ -1109,11 +1135,13 @@ function renderPlaces() {
   if (!list.length) { grid.innerHTML = `<div class="no-results">該当なし</div>`; return; }
   grid.innerHTML = list.map((p) => {
     const img = placeImages[p.id];
-    const thumb = img
-      ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('place',${p.id})" style="cursor:pointer">`
-      : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('place',${p.id})">
-           <div class="item-thumb-placeholder-label"><span>📍</span>写真</div>
-         </div>`;
+    const thumb = img === '__loading__'
+      ? `<div class="item-thumb-placeholder"><div class="item-thumb-placeholder-label"><span class="loading-spinner-sm"></span>アップロード中…</div></div>`
+      : img
+        ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('place',${p.id})" style="cursor:pointer">`
+        : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('place',${p.id})">
+             <div class="item-thumb-placeholder-label"><span>📍</span>写真</div>
+           </div>`;
     const visitLabel = p.visitYear ? `<span style="font-size:10px;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:10px">${p.visitYear}年${p.visitMonth?p.visitMonth+'月':''}</span>` : '';
     return `<div class="item-card" style="--panel-c:var(--place)">
       <div class="card-actions">
@@ -1219,13 +1247,11 @@ window.setRestYearFilter = function(btn) {
 };
 
 function renderRest() {
-  const q = document.querySelector('#rest-panel .search-wrap input').value.trim().toLowerCase();
   const sortVal = document.getElementById('rest-sort').value;
   let list = restaurants.filter(r => {
-    const matchQ = !q || r.name.toLowerCase().includes(q) || (r.chainName && r.chainName.toLowerCase().includes(q));
     const matchF = activeRestFilter === 'all' || (activeRestFilter === 'chain' && r.isChain) || (activeRestFilter === 'local' && !r.isChain);
     const matchYear = activeYearFilterRest === 'all' || String(r.visitYear) === String(activeYearFilterRest);
-    return matchQ && matchF && matchYear;
+    return matchF && matchYear;
   });
   if (sortVal === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
   else if (sortVal === 'tag') list = [...list].sort((a,b) => {
@@ -1243,11 +1269,13 @@ function renderRest() {
       return `<span class="tag-chip" style="background:${s.bg};color:${s.color}">${t}</span>`;
     }).join('');
     const img = restImages[r.id];
-    const thumb = img
-      ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('rest',${r.id})" style="cursor:pointer">`
-      : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('rest',${r.id})">
-           <div class="item-thumb-placeholder-label"><span>🍽️</span>写真</div>
-         </div>`;
+    const thumb = img === '__loading__'
+      ? `<div class="item-thumb-placeholder"><div class="item-thumb-placeholder-label"><span class="loading-spinner-sm"></span>アップロード中…</div></div>`
+      : img
+        ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('rest',${r.id})" style="cursor:pointer">`
+        : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('rest',${r.id})">
+             <div class="item-thumb-placeholder-label"><span>🍽️</span>写真</div>
+           </div>`;
     const visitLabel = r.visitYear ? `<span style="font-size:10px;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:10px">${r.visitYear}年${r.visitMonth?r.visitMonth+'月':''}</span>` : '';
     return `<div class="item-card" style="--panel-c:var(--rest)">
       <div class="card-actions">
