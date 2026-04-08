@@ -325,7 +325,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   <!-- 映画サブパネル -->
   <div id="sub-movies" class="movie-subpanel">
     <div class="toolbar" style="margin-top:12px">
-      <select class="sort-sel" oninput="renderMovies()" onchange="renderMovies()" id="movie-sort">
+      <select class="sort-sel" id="movie-sort">
         <option value="title">タイトル順</option>
         <option value="rating">評価順</option>
         <option value="added">追加順</option>
@@ -344,7 +344,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   <!-- シリーズサブパネル -->
   <div id="sub-series" class="movie-subpanel" style="display:none">
     <div class="toolbar" style="margin-top:12px">
-      <select class="sort-sel" oninput="renderSeries()" onchange="renderSeries()" id="series-sort">
+      <select class="sort-sel" id="series-sort">
         <option value="title">タイトル順</option>
         <option value="rating">評価順</option>
         <option value="added">追加順</option>
@@ -371,7 +371,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="add-btn place-btn" onclick="openPlaceModal()">＋ スポットを追加</button>
   </div>
   <div class="toolbar">
-    <select class="sort-sel" oninput="renderPlaces()" onchange="renderPlaces()" id="place-sort">
+    <select class="sort-sel" id="place-sort">
       <option value="added">追加順</option>
       <option value="name">名前順</option>
       <option value="pref">都道府県順</option>
@@ -399,7 +399,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="add-btn rest-btn" onclick="openRestModal()">＋ 飲食店を追加</button>
   </div>
   <div class="toolbar">
-    <select class="sort-sel" oninput="renderRest()" onchange="renderRest()" id="rest-sort">
+    <select class="sort-sel" id="rest-sort">
       <option value="added">追加順</option>
       <option value="name">名前順</option>
       <option value="tag">カテゴリ順</option>
@@ -897,6 +897,19 @@ let pendingImgTarget = null;
 async function initApp() {
   initLastUpdated();
   populateYearSelects();
+
+  // ソートをJSで直接バインド（moduleスコープ問題を回避）
+  const sortBindings = [
+    ['movie-sort',  () => renderMovies()],
+    ['series-sort', () => renderSeries()],
+    ['place-sort',  () => renderPlaces()],
+    ['rest-sort',   () => renderRest()],
+  ];
+  sortBindings.forEach(([id, fn]) => {
+    const el = document.getElementById(id);
+    if (el) { el.addEventListener('change', fn); el.addEventListener('input', fn); }
+  });
+
   await loadAllImages();
   renderTagFilters();
   renderMovies();
