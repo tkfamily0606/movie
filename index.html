@@ -325,7 +325,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   <!-- 映画サブパネル -->
   <div id="sub-movies" class="movie-subpanel">
     <div class="toolbar" style="margin-top:12px">
-      <select class="sort-sel" onchange="renderMovies()" id="movie-sort">
+      <select class="sort-sel" oninput="renderMovies()" onchange="renderMovies()" id="movie-sort">
         <option value="title">タイトル順</option>
         <option value="rating">評価順</option>
         <option value="added">追加順</option>
@@ -335,7 +335,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <div class="tag-filter-wrap" id="tag-filters"></div>
     <div class="fav-filter-wrap" id="movie-fav-filter">
       <button class="fav-filter-btn active" data-fav="all" onclick="setMovieFavFilter(this)">すべて</button>
-      <button class="fav-filter-btn" data-fav="fav" onclick="setMovieFavFilter(this)">❤️ お気に入りのみ</button>
+      <button class="fav-filter-btn" data-fav="fav" onclick="setMovieFavFilter(this)">❤️ お気に入り</button>
     </div>
     <div class="page-meta" id="movie-meta" style="margin-bottom:10px;font-size:12px;color:var(--text2)"></div>
     <div class="cards-grid" id="movies-grid"></div>
@@ -344,7 +344,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   <!-- シリーズサブパネル -->
   <div id="sub-series" class="movie-subpanel" style="display:none">
     <div class="toolbar" style="margin-top:12px">
-      <select class="sort-sel" onchange="renderSeries()" id="series-sort">
+      <select class="sort-sel" oninput="renderSeries()" onchange="renderSeries()" id="series-sort">
         <option value="title">タイトル順</option>
         <option value="rating">評価順</option>
         <option value="added">追加順</option>
@@ -354,7 +354,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <div class="tag-filter-wrap" id="series-tag-filters"></div>
     <div class="fav-filter-wrap" id="series-fav-filter">
       <button class="fav-filter-btn active" data-fav="all" onclick="setSeriesFavFilter(this)">すべて</button>
-      <button class="fav-filter-btn" data-fav="fav" onclick="setSeriesFavFilter(this)">❤️ お気に入りのみ</button>
+      <button class="fav-filter-btn" data-fav="fav" onclick="setSeriesFavFilter(this)">❤️ お気に入り</button>
     </div>
     <div class="page-meta" id="series-meta" style="margin-bottom:10px;font-size:12px;color:var(--text2)"></div>
     <div class="cards-grid" id="series-grid"></div>
@@ -371,7 +371,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="add-btn place-btn" onclick="openPlaceModal()">＋ スポットを追加</button>
   </div>
   <div class="toolbar">
-    <select class="sort-sel" onchange="renderPlaces()" id="place-sort">
+    <select class="sort-sel" oninput="renderPlaces()" onchange="renderPlaces()" id="place-sort">
       <option value="added">追加順</option>
       <option value="name">名前順</option>
       <option value="pref">都道府県順</option>
@@ -382,8 +382,8 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   <div class="rest-filter-wrap" id="place-chain-filters">
     <span class="tag-filter-label">種別：</span>
     <button class="place-filter-btn active" data-cf="all" onclick="setPlaceChainFilter(this)">すべて</button>
-    <button class="place-filter-btn" data-cf="chain" onclick="setPlaceChainFilter(this)">🔗 チェーン店のみ</button>
-    <button class="place-filter-btn" data-cf="local" onclick="setPlaceChainFilter(this)">🏠 個別スポットのみ</button>
+    <button class="place-filter-btn" data-cf="chain" onclick="setPlaceChainFilter(this)">🔗 チェーン店</button>
+    <button class="place-filter-btn" data-cf="local" onclick="setPlaceChainFilter(this)">🏠 個別スポット</button>
   </div>
   <div class="year-filter-wrap" id="place-year-filters" style="--panel-c:var(--place)"></div>
   <div class="cards-grid item-grid-2col" id="places-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
@@ -399,7 +399,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="add-btn rest-btn" onclick="openRestModal()">＋ 飲食店を追加</button>
   </div>
   <div class="toolbar">
-    <select class="sort-sel" onchange="renderRest()" id="rest-sort">
+    <select class="sort-sel" oninput="renderRest()" onchange="renderRest()" id="rest-sort">
       <option value="added">追加順</option>
       <option value="name">名前順</option>
       <option value="tag">カテゴリ順</option>
@@ -408,8 +408,8 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   <div class="rest-filter-wrap" id="rest-filters">
     <span class="tag-filter-label">絞り込み：</span>
     <button class="rest-filter-btn active" data-f="all" onclick="setRestFilter(this)">すべて</button>
-    <button class="rest-filter-btn" data-f="chain" onclick="setRestFilter(this)">🔗 チェーン店のみ</button>
-    <button class="rest-filter-btn" data-f="local" onclick="setRestFilter(this)">🏠 個人店のみ</button>
+    <button class="rest-filter-btn" data-f="chain" onclick="setRestFilter(this)">🔗 チェーン店</button>
+    <button class="rest-filter-btn" data-f="local" onclick="setRestFilter(this)">🏠 個別店</button>
   </div>
   <div class="year-filter-wrap" id="rest-year-filters" style="--panel-c:var(--rest)"></div>
   <div class="cards-grid item-grid-2col" id="rest-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
