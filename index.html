@@ -100,6 +100,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 .movie-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; transition: all 0.15s; cursor: default; position: relative; }
 .movie-card:hover { border-color: var(--movie-border); box-shadow: 0 4px 14px rgba(232,100,58,0.1); transform: translateY(-1px); }
 .card-title { font-size: 14px; font-weight: 700; line-height: 1.4; margin-bottom: 8px; color: var(--text); padding-right: 40px; }
+.movie-card { padding-bottom: 36px; }
 .card-series-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: #fce4ec; color: #b5174a; margin-bottom: 6px; }
 .stars { display: flex; gap: 2px; margin-bottom: 6px; }
 .star { font-size: 16px; cursor: pointer; transition: transform 0.1s; color: #e0d8cf; user-select: none; }
@@ -219,6 +220,36 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 .place-filter-btn { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
 .place-filter-btn:hover { border-color: var(--place); color: var(--place); }
 .place-filter-btn.active { background: var(--place); border-color: var(--place); color: #fff; font-weight: 700; }
+.place-filter-btn.chain-active { background: var(--chain); border-color: var(--chain); color: #fff; font-weight: 700; }
+
+/* MOVIE SUBTABS */
+.movie-subtab-wrap { display: flex; gap: 4px; margin-bottom: 4px; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+.movie-subtab { display: flex; align-items: center; gap: 6px; padding: 8px 18px; border: none; background: transparent; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 500; color: var(--text2); border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+.movie-subtab:hover { color: var(--movie); }
+.movie-subtab.active { color: var(--movie); font-weight: 700; border-bottom-color: var(--movie); }
+.movie-subtab-badge { font-size: 11px; padding: 1px 7px; border-radius: 20px; background: var(--surface2); color: var(--text3); }
+.movie-subtab.active .movie-subtab-badge { background: var(--movie); color: #fff; }
+
+/* FAV FILTER */
+.fav-filter-wrap { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
+.fav-filter-btn { padding: 4px 12px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
+.fav-filter-btn:hover { border-color: #e91e63; color: #e91e63; }
+.fav-filter-btn.active { background: var(--movie); border-color: var(--movie); color: #fff; font-weight: 700; }
+.fav-filter-btn.fav-active { background: #e91e63; border-color: #e91e63; color: #fff; font-weight: 700; }
+
+/* FAV BUTTON on card */
+.card-fav-btn { position: absolute; bottom: 10px; right: 10px; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--border); background: rgba(255,255,255,0.92); backdrop-filter: blur(4px); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; z-index: 2; }
+.card-fav-btn:hover { transform: scale(1.2); border-color: #e91e63; }
+.card-fav-btn.fav-on { background: #fff0f5; border-color: #e91e63; }
+
+/* MOBILE 2-COLUMN for item-cards */
+@media (max-width: 600px) {
+  .item-grid-2col { grid-template-columns: repeat(2, 1fr) !important; }
+  .item-grid-2col .item-thumb,
+  .item-grid-2col .item-thumb-placeholder { height: 56px; }
+  .item-grid-2col .item-name { font-size: 12px; }
+  .item-grid-2col .item-sub { font-size: 10px; gap: 3px; }
+}
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -248,7 +279,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <nav class="nav-tabs">
       <button class="nav-tab active" data-panel="movies-panel" style="--tab-c: var(--movie)" onclick="switchTab(this)">
         <span>🎬</span>映画
-        <span class="tab-badge" id="cnt-movies">0</span>
+        <span class="tab-badge" id="cnt-movies-all">0</span>
       </button>
       <button class="nav-tab" data-panel="places-panel" style="--tab-c: var(--place)" onclick="switchTab(this)">
         <span>📍</span>スポット
@@ -268,7 +299,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 
 <main>
 
-<!-- MOVIES -->
+<!-- MOVIES (unified with subtabs) -->
 <section id="movies-panel" class="panel active" style="--panel-c: var(--movie)">
   <div class="page-header">
     <div>
@@ -276,19 +307,58 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
         <div class="page-title-icon" style="background:var(--movie-bg)">🎬</div>
         映画・シリーズ
       </div>
-      <div class="page-meta" id="movie-meta"></div>
+      <div class="page-meta" id="movie-meta-main"></div>
     </div>
-    <button class="add-btn" onclick="openMovieModal()">＋ 映画を追加</button>
+    <button class="add-btn" onclick="openMovieModal()">＋ 追加</button>
   </div>
-  <div class="toolbar">
-    <select class="sort-sel" onchange="renderMovies()" id="movie-sort">
-      <option value="title">タイトル順</option>
-      <option value="rating">評価順</option>
-      <option value="added">追加順</option>
-    </select>
+
+  <!-- サブタブ -->
+  <div class="movie-subtab-wrap">
+    <button class="movie-subtab active" data-sub="movies" onclick="switchMovieSub(this)">
+      🎬 映画 <span class="movie-subtab-badge" id="cnt-movies">0</span>
+    </button>
+    <button class="movie-subtab" data-sub="series" onclick="switchMovieSub(this)">
+      📺 シリーズ <span class="movie-subtab-badge" id="cnt-series">0</span>
+    </button>
   </div>
-  <div class="tag-filter-wrap" id="tag-filters"></div>
-  <div class="cards-grid" id="movies-grid"></div>
+
+  <!-- 映画サブパネル -->
+  <div id="sub-movies" class="movie-subpanel">
+    <div class="toolbar" style="margin-top:12px">
+      <select class="sort-sel" onchange="renderMovies()" id="movie-sort">
+        <option value="title">タイトル順</option>
+        <option value="rating">評価順</option>
+        <option value="added">追加順</option>
+        <option value="fav">お気に入り優先</option>
+      </select>
+    </div>
+    <div class="tag-filter-wrap" id="tag-filters"></div>
+    <div class="fav-filter-wrap" id="movie-fav-filter">
+      <button class="fav-filter-btn active" data-fav="all" onclick="setMovieFavFilter(this)">すべて</button>
+      <button class="fav-filter-btn" data-fav="fav" onclick="setMovieFavFilter(this)">❤️ お気に入りのみ</button>
+    </div>
+    <div class="page-meta" id="movie-meta" style="margin-bottom:10px;font-size:12px;color:var(--text2)"></div>
+    <div class="cards-grid" id="movies-grid"></div>
+  </div>
+
+  <!-- シリーズサブパネル -->
+  <div id="sub-series" class="movie-subpanel" style="display:none">
+    <div class="toolbar" style="margin-top:12px">
+      <select class="sort-sel" onchange="renderSeries()" id="series-sort">
+        <option value="title">タイトル順</option>
+        <option value="rating">評価順</option>
+        <option value="added">追加順</option>
+        <option value="fav">お気に入り優先</option>
+      </select>
+    </div>
+    <div class="tag-filter-wrap" id="series-tag-filters"></div>
+    <div class="fav-filter-wrap" id="series-fav-filter">
+      <button class="fav-filter-btn active" data-fav="all" onclick="setSeriesFavFilter(this)">すべて</button>
+      <button class="fav-filter-btn" data-fav="fav" onclick="setSeriesFavFilter(this)">❤️ お気に入りのみ</button>
+    </div>
+    <div class="page-meta" id="series-meta" style="margin-bottom:10px;font-size:12px;color:var(--text2)"></div>
+    <div class="cards-grid" id="series-grid"></div>
+  </div>
 </section>
 
 <!-- PLACES -->
@@ -309,8 +379,14 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     </select>
   </div>
   <div class="place-filter-wrap" id="place-pref-filters"></div>
+  <div class="rest-filter-wrap" id="place-chain-filters">
+    <span class="tag-filter-label">種別：</span>
+    <button class="place-filter-btn active" data-cf="all" onclick="setPlaceChainFilter(this)">すべて</button>
+    <button class="place-filter-btn" data-cf="chain" onclick="setPlaceChainFilter(this)">🔗 チェーン店のみ</button>
+    <button class="place-filter-btn" data-cf="local" onclick="setPlaceChainFilter(this)">🏠 個別スポットのみ</button>
+  </div>
   <div class="year-filter-wrap" id="place-year-filters" style="--panel-c:var(--place)"></div>
-  <div class="cards-grid" id="places-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
+  <div class="cards-grid item-grid-2col" id="places-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
 </section>
 
 <!-- RESTAURANTS -->
@@ -336,7 +412,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="rest-filter-btn" data-f="local" onclick="setRestFilter(this)">🏠 個人店のみ</button>
   </div>
   <div class="year-filter-wrap" id="rest-year-filters" style="--panel-c:var(--rest)"></div>
-  <div class="cards-grid" id="rest-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
+  <div class="cards-grid item-grid-2col" id="rest-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
 </section>
 
 <!-- PREFECTURES -->
@@ -449,6 +525,16 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
           <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
           <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
         </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">チェーン店</label>
+      <div class="series-toggle" onclick="togglePlaceChainCheck()">
+        <div class="toggle-box" id="place-chain-chk">✓</div>
+        <span style="font-size:13px;color:var(--text2)">チェーン店として登録する</span>
+      </div>
+      <div class="series-input-wrap" id="place-chain-name-wrap">
+        <input class="form-input" id="p-chain-name" placeholder="チェーン名（例：イオン、スターバックス）">
       </div>
     </div>
     <div class="form-group">
@@ -743,23 +829,23 @@ async function loadFirestoreData() {
   // movies
   const moviesData = await fsGet('movies');
   if (moviesData && moviesData.length > 0) {
-    movies = moviesData.map(d => ({ id: d.id, title: d.title||'', rating: Number(d.rating)||0, tags: d.tags||[], series: d.series||'', memo: d.memo||'', addedAt: d.addedAt||0 }));
+    movies = moviesData.map(d => ({ id: d.id, title: d.title||'', rating: Number(d.rating)||0, tags: d.tags||[], series: d.series||'', memo: d.memo||'', fav: !!d.fav, addedAt: d.addedAt||0 }));
     nextMovieId = Math.max(...movies.map(m => m.id), 0) + 1;
   } else {
     movies = getDefaultMovies();
     nextMovieId = movies.length + 1;
     // Save defaults
-    for (const m of movies) await fsSet('movies', m.id, { id: m.id, title: m.title, rating: m.rating, tags: m.tags, series: m.series, memo: m.memo, addedAt: m.addedAt });
+    for (const m of movies) await fsSet('movies', m.id, { id: m.id, title: m.title, rating: m.rating, tags: m.tags, series: m.series, memo: m.memo, fav: false, addedAt: m.addedAt });
   }
   // places
   const placesData = await fsGet('places');
   if (placesData && placesData.length > 0) {
-    places = placesData.map(d => ({ id: d.id, name: d.name||'', pref: d.pref||'', memo: d.memo||'', visitYear: d.visitYear||null, visitMonth: d.visitMonth||null, addedAt: d.addedAt||0 }));
+    places = placesData.map(d => ({ id: d.id, name: d.name||'', pref: d.pref||'', isChain: !!d.isChain, chainName: d.chainName||'', memo: d.memo||'', visitYear: d.visitYear||null, visitMonth: d.visitMonth||null, addedAt: d.addedAt||0 }));
     nextPlaceId = Math.max(...places.map(p => p.id), 0) + 1;
   } else {
     places = getDefaultPlaces();
     nextPlaceId = places.length + 1;
-    for (const p of places) await fsSet('places', p.id, { id: p.id, name: p.name, pref: p.pref, memo: p.memo, visitYear: null, visitMonth: null, addedAt: p.addedAt });
+    for (const p of places) await fsSet('places', p.id, { id: p.id, name: p.name, pref: p.pref, isChain: false, chainName: '', memo: p.memo, visitYear: null, visitMonth: null, addedAt: p.addedAt });
   }
   // restaurants
   const restData = await fsGet('restaurants');
@@ -786,6 +872,10 @@ initAndLoad();
 
 // ──────────────── App State ────────────────
 let activeTagFilter = 'all';
+let activeSeriesTagFilter = 'all';
+let activeMovieFavFilter = 'all';
+let activeSeriesFavFilter = 'all';
+let activeMovieSub = 'movies';
 let activeYearFilterPlace = 'all';
 let activeYearFilterRest = 'all';
 let modalStar = 0;
@@ -794,10 +884,12 @@ let isSeriesOn = false;
 let editingMovieId = null;
 let restModalTags = [];
 let isChainOn = false;
+let isPlaceChainOn = false;
 let editingRestId = null;
 let editingPlaceId = null;
 let activeRestFilter = 'all';
 let activePlacePrefFilter = 'all';
+let activePlaceChainFilter = 'all';
 let pendingDelete = null;
 let pendingImgTarget = null;
 
@@ -808,6 +900,7 @@ async function initApp() {
   await loadAllImages();
   renderTagFilters();
   renderMovies();
+  renderSeries();
   renderPlacePrefFilters();
   renderPlaces();
   renderRest();
@@ -836,6 +929,14 @@ window.switchTab = function(btn) {
   document.getElementById(btn.dataset.panel).classList.add('active');
 };
 
+window.switchMovieSub = function(btn) {
+  activeMovieSub = btn.dataset.sub;
+  document.querySelectorAll('.movie-subtab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sub-movies').style.display = activeMovieSub === 'movies' ? '' : 'none';
+  document.getElementById('sub-series').style.display = activeMovieSub === 'series' ? '' : 'none';
+};
+
 // ──────────────── Delete modal ────────────────
 window.openDelModal = function(type, id, name) {
   pendingDelete = { type, id };
@@ -849,7 +950,7 @@ window.confirmDelete = async function() {
   if (type === 'movie') {
     movies = movies.filter(m => m.id !== id);
     await fsDel('movies', id);
-    renderTagFilters(); renderMovies();
+    renderTagFilters(); renderMovies(); renderSeries();
   } else if (type === 'place') {
     places = places.filter(p => p.id !== id);
     delete placeImages[id];
@@ -880,17 +981,52 @@ function getAllTags() {
 function renderTagFilters() {
   const wrap = document.getElementById('tag-filters');
   const tags = getAllTags();
-  const seriesCount = movies.filter(m => m.series).length;
   wrap.innerHTML =
     `<span class="tag-filter-label">絞り込み：</span>` +
     `<button class="tag-filter-btn${activeTagFilter==='all'?' active':''}" data-tag="all" onclick="setTagFilter(this)">すべて</button>` +
-    `<button class="tag-filter-btn${activeTagFilter==='series'?' active':''}" data-tag="series" onclick="setTagFilter(this)">📺 シリーズ (${seriesCount})</button>` +
     tags.map(t => {
       const s = tagStyle(t);
       const active = activeTagFilter === t ? ' active' : '';
       return `<button class="tag-filter-btn${active}" data-tag="${t}" onclick="setTagFilter(this)" style="${active ? '' : `border-color:${s.bg}`}">${t}</button>`;
     }).join('');
 }
+
+function renderSeriesTagFilters() {
+  const wrap = document.getElementById('series-tag-filters');
+  if (!wrap) return;
+  const s = new Set();
+  movies.filter(m => m.series).forEach(m => m.tags.forEach(t => s.add(t)));
+  const tags = [...s].sort();
+  wrap.innerHTML =
+    `<span class="tag-filter-label">絞り込み：</span>` +
+    `<button class="tag-filter-btn${activeSeriesTagFilter==='all'?' active':''}" data-tag="all" onclick="setSeriesTagFilter(this)">すべて</button>` +
+    tags.map(t => {
+      const st = tagStyle(t);
+      const active = activeSeriesTagFilter === t ? ' active' : '';
+      return `<button class="tag-filter-btn${active}" data-tag="${t}" onclick="setSeriesTagFilter(this)" style="${active ? '' : `border-color:${st.bg}`}">${t}</button>`;
+    }).join('');
+}
+
+window.setSeriesTagFilter = function(btn) {
+  activeSeriesTagFilter = typeof btn === 'string' ? btn : btn.dataset.tag;
+  renderSeriesTagFilters(); renderSeries();
+};
+
+window.setMovieFavFilter = function(btn) {
+  activeMovieFavFilter = btn.dataset.fav;
+  document.querySelectorAll('#movie-fav-filter .fav-filter-btn').forEach(b => b.classList.remove('active','fav-active'));
+  if (activeMovieFavFilter === 'fav') btn.classList.add('fav-active');
+  else btn.classList.add('active');
+  renderMovies();
+};
+
+window.setSeriesFavFilter = function(btn) {
+  activeSeriesFavFilter = btn.dataset.fav;
+  document.querySelectorAll('#series-fav-filter .fav-filter-btn').forEach(b => b.classList.remove('active','fav-active'));
+  if (activeSeriesFavFilter === 'fav') btn.classList.add('fav-active');
+  else btn.classList.add('active');
+  renderSeries();
+};
 
 window.setTagFilter = function(btn) {
   activeTagFilter = typeof btn === 'string' ? btn : btn.dataset.tag;
@@ -903,18 +1039,25 @@ function starsHTML(rating, id) {
   ).join('');
 }
 
+function updateMovieTotalBadge() {
+  document.getElementById('cnt-movies-all').textContent = movies.length;
+}
+
 function renderMovies() {
-  const sortVal = document.getElementById('movie-sort').value;
+  const sortVal = document.getElementById('movie-sort') ? document.getElementById('movie-sort').value : 'title';
   let list = movies.filter(m => {
-    if (activeTagFilter === 'all') return true;
-    if (activeTagFilter === 'series') return !!m.series;
-    return m.tags.includes(activeTagFilter);
+    if (m.series) return false;
+    if (activeTagFilter !== 'all' && !m.tags.includes(activeTagFilter)) return false;
+    if (activeMovieFavFilter === 'fav' && !m.fav) return false;
+    return true;
   });
-  if (sortVal === 'rating') list = [...list].sort((a,b) => (Number(b.rating)||0) - (Number(a.rating)||0) || a.title.localeCompare(b.title,'ja'));
+  if (sortVal === 'rating') list = [...list].sort((a,b) => (b.rating||0) - (a.rating||0) || a.title.localeCompare(b.title,'ja'));
   else if (sortVal === 'added') list = [...list].sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
+  else if (sortVal === 'fav') list = [...list].sort((a,b) => (b.fav?1:0) - (a.fav?1:0) || a.title.localeCompare(b.title,'ja'));
   else list = [...list].sort((a,b) => a.title.localeCompare(b.title,'ja'));
 
   const grid = document.getElementById('movies-grid');
+  if (!grid) return;
   if (!list.length) { grid.innerHTML = `<div class="no-results">該当なし</div>`; return; }
 
   grid.innerHTML = list.map(m => {
@@ -922,12 +1065,59 @@ function renderMovies() {
       const s = tagStyle(t);
       return `<span class="tag-chip" style="background:${s.bg};color:${s.color}" onclick="setTagFilter('${t}')">${t}</span>`;
     }).join('');
-    const seriesBadge = m.series ? `<div class="card-series-badge">📺 ${m.series}</div>` : '';
     return `<div class="movie-card">
       <div class="card-actions">
         <button class="card-action-btn edit" onclick="openEditMovieModal(${m.id})" title="編集">✏️</button>
         <button class="card-action-btn del" onclick="openDelModal('movie',${m.id},'${m.title.replace(/'/g,"\\'")}');event.stopPropagation()" title="削除">🗑️</button>
       </div>
+      <button class="card-fav-btn${m.fav?' fav-on':''}" onclick="toggleMovieFav(${m.id})" title="${m.fav?'お気に入り解除':'お気に入り'}">${m.fav?'❤️':'🤍'}</button>
+      <div class="card-title">${m.title}</div>
+      <div class="stars">${starsHTML(m.rating, m.id)}</div>
+      ${tagChips ? `<div class="card-tags">${tagChips}</div>` : ''}
+      ${m.memo ? `<div class="card-memo">${m.memo}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const normalMovies = movies.filter(m => !m.series);
+  const favCount = normalMovies.filter(m => m.fav).length;
+  const rated = normalMovies.filter(m => m.rating > 0);
+  const avgRating = rated.length ? (rated.reduce((s,m)=>s+m.rating,0)/rated.length).toFixed(1) : '-';
+  const metaEl = document.getElementById('movie-meta');
+  if (metaEl) metaEl.textContent = `全 ${normalMovies.length} 本　|　❤️ ${favCount}　|　平均評価 ${avgRating} ★`;
+  document.getElementById('cnt-movies').textContent = normalMovies.length;
+  updateMovieTotalBadge();
+  renderTagFilters();
+}
+
+function renderSeries() {
+  const sortVal = document.getElementById('series-sort') ? document.getElementById('series-sort').value : 'title';
+  let list = movies.filter(m => {
+    if (!m.series) return false;
+    if (activeSeriesTagFilter !== 'all' && !m.tags.includes(activeSeriesTagFilter)) return false;
+    if (activeSeriesFavFilter === 'fav' && !m.fav) return false;
+    return true;
+  });
+  if (sortVal === 'rating') list = [...list].sort((a,b) => (b.rating||0) - (a.rating||0) || a.title.localeCompare(b.title,'ja'));
+  else if (sortVal === 'added') list = [...list].sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
+  else if (sortVal === 'fav') list = [...list].sort((a,b) => (b.fav?1:0) - (a.fav?1:0) || a.title.localeCompare(b.title,'ja'));
+  else list = [...list].sort((a,b) => a.title.localeCompare(b.title,'ja'));
+
+  const grid = document.getElementById('series-grid');
+  if (!grid) return;
+  if (!list.length) { grid.innerHTML = `<div class="no-results">該当なし</div>`; return; }
+
+  grid.innerHTML = list.map(m => {
+    const tagChips = m.tags.map(t => {
+      const s = tagStyle(t);
+      return `<span class="tag-chip" style="background:${s.bg};color:${s.color}" onclick="setSeriesTagFilter('${t}')">${t}</span>`;
+    }).join('');
+    const seriesBadge = `<div class="card-series-badge">📺 ${m.series}</div>`;
+    return `<div class="movie-card" style="--movie-border:#fcc8d9;border-color:var(--movie-border)">
+      <div class="card-actions">
+        <button class="card-action-btn edit" onclick="openEditMovieModal(${m.id})" title="編集">✏️</button>
+        <button class="card-action-btn del" onclick="openDelModal('movie',${m.id},'${m.title.replace(/'/g,"\\'")}');event.stopPropagation()" title="削除">🗑️</button>
+      </div>
+      <button class="card-fav-btn${m.fav?' fav-on':''}" onclick="toggleMovieFav(${m.id})" title="${m.fav?'お気に入り解除':'お気に入り'}">${m.fav?'❤️':'🤍'}</button>
       ${seriesBadge}
       <div class="card-title">${m.title}</div>
       <div class="stars">${starsHTML(m.rating, m.id)}</div>
@@ -936,19 +1126,33 @@ function renderMovies() {
     </div>`;
   }).join('');
 
-  const rated = movies.filter(m => m.rating > 0);
+  const seriesMovies = movies.filter(m => m.series);
+  const favCount = seriesMovies.filter(m => m.fav).length;
+  const rated = seriesMovies.filter(m => m.rating > 0);
   const avgRating = rated.length ? (rated.reduce((s,m)=>s+m.rating,0)/rated.length).toFixed(1) : '-';
-  document.getElementById('movie-meta').textContent =
-    `全 ${movies.length} 本　|　シリーズあり ${movies.filter(m=>m.series).length} 本　|　平均評価 ${avgRating} ★`;
-  document.getElementById('cnt-movies').textContent = movies.length;
+  const uniqueSeries = new Set(seriesMovies.map(m=>m.series)).size;
+  const metaEl = document.getElementById('series-meta');
+  if (metaEl) metaEl.textContent = `全 ${seriesMovies.length} 本　|　シリーズ数 ${uniqueSeries}　|　❤️ ${favCount}　|　平均評価 ${avgRating} ★`;
+  document.getElementById('cnt-series').textContent = seriesMovies.length;
+  updateMovieTotalBadge();
+  renderSeriesTagFilters();
 }
 
 window.setMovieStar = async function(id, val) {
   const m = movies.find(x => x.id === id);
   if (m) {
     m.rating = m.rating === val ? 0 : val;
-    await fsSet('movies', id, { id: m.id, title: m.title, rating: m.rating, tags: m.tags, series: m.series, memo: m.memo, addedAt: m.addedAt });
-    renderMovies();
+    await fsSet('movies', id, { id: m.id, title: m.title, rating: m.rating, tags: m.tags, series: m.series, memo: m.memo, fav: !!m.fav, addedAt: m.addedAt });
+    renderMovies(); renderSeries();
+  }
+};
+
+window.toggleMovieFav = async function(id) {
+  const m = movies.find(x => x.id === id);
+  if (m) {
+    m.fav = !m.fav;
+    await fsSet('movies', id, { id: m.id, title: m.title, rating: m.rating, tags: m.tags, series: m.series, memo: m.memo, fav: m.fav, addedAt: m.addedAt });
+    renderMovies(); renderSeries();
   }
 };
 
@@ -1010,11 +1214,11 @@ window.saveMovie = async function() {
     const m = movies.find(x => x.id === editingMovieId);
     if (m) { m.title = title; m.rating = modalStar; m.tags = [...modalTags]; m.series = series; m.memo = memo; movieData = m; }
   } else {
-    movieData = { id: nextMovieId++, title, rating: modalStar, tags:[...modalTags], series, memo, addedAt: Date.now() };
+    movieData = { id: nextMovieId++, title, rating: modalStar, tags:[...modalTags], series, memo, fav: false, addedAt: Date.now() };
     movies.push(movieData);
   }
-  if (movieData) await fsSet('movies', movieData.id, { id: movieData.id, title: movieData.title, rating: movieData.rating, tags: movieData.tags, series: movieData.series, memo: movieData.memo, addedAt: movieData.addedAt });
-  closeMovieModal(); renderTagFilters(); renderMovies();
+  if (movieData) await fsSet('movies', movieData.id, { id: movieData.id, title: movieData.title, rating: movieData.rating, tags: movieData.tags, series: movieData.series, memo: movieData.memo, fav: !!movieData.fav, addedAt: movieData.addedAt });
+  closeMovieModal(); renderTagFilters(); renderMovies(); renderSeries();
 };
 
 // ──────────────── Places ────────────────
@@ -1116,7 +1320,8 @@ function renderPlaces() {
   let list = places.filter(p => {
     const matchPref = activePlacePrefFilter === 'all' || p.pref === activePlacePrefFilter;
     const matchYear = activeYearFilterPlace === 'all' || String(p.visitYear) === String(activeYearFilterPlace);
-    return matchPref && matchYear;
+    const matchChain = activePlaceChainFilter === 'all' || (activePlaceChainFilter === 'chain' && p.isChain) || (activePlaceChainFilter === 'local' && !p.isChain);
+    return matchPref && matchYear && matchChain;
   });
   if (sortVal === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
   else if (sortVal === 'pref') list = [...list].sort((a,b) => {
@@ -1152,6 +1357,7 @@ function renderPlaces() {
       <div class="item-body">
         <div class="item-name">${p.name}</div>
         <div class="item-sub">
+          ${p.isChain ? `<span class="chain-badge">🔗 ${p.chainName||'チェーン店'}</span>` : ''}
           ${p.pref ? `<span class="pref-badge">🗾 ${p.pref}</span>` : ''}
           ${visitLabel}
           ${p.memo ? `<span style="color:var(--text3);font-style:italic;font-size:11px">${p.memo}</span>` : ''}
@@ -1159,10 +1365,19 @@ function renderPlaces() {
       </div>
     </div>`;
   }).join('');
-  document.getElementById('places-meta').textContent = `全 ${places.length} 箇所`;
+  const chainCount = places.filter(p => p.isChain).length;
+  document.getElementById('places-meta').textContent = `全 ${places.length} 箇所${chainCount ? `　|　チェーン店 ${chainCount} 箇所` : ''}`;
   document.getElementById('cnt-places').textContent = places.length;
   renderPlaceYearFilters();
 }
+
+window.setPlaceChainFilter = function(btn) {
+  activePlaceChainFilter = btn.dataset.cf;
+  document.querySelectorAll('#place-chain-filters .place-filter-btn').forEach(b => b.classList.remove('active','chain-active'));
+  if (activePlaceChainFilter === 'chain') btn.classList.add('chain-active');
+  else btn.classList.add('active');
+  renderPlaces();
+};
 
 // Place Modal
 function populatePrefSelect(selId, val) {
@@ -1180,15 +1395,25 @@ function populateYearSelect(selId, val) {
 }
 window.openPlaceModal = function(edit) {
   editingPlaceId = edit ? edit.id : null;
+  isPlaceChainOn = edit ? !!edit.isChain : false;
   populatePrefSelect('p-pref', edit ? (edit.pref||'') : '');
   populateYearSelect('p-year', edit ? (edit.visitYear||'') : '');
   const mSel = document.getElementById('p-month');
   mSel.value = edit ? (edit.visitMonth||'') : '';
   document.getElementById('p-name').value = edit ? edit.name : '';
+  document.getElementById('p-chain-name').value = edit ? (edit.chainName||'') : '';
   document.getElementById('p-memo').value = edit ? (edit.memo||'') : '';
+  document.getElementById('place-chain-chk').classList.toggle('checked-chain', isPlaceChainOn);
+  document.getElementById('place-chain-name-wrap').classList.toggle('show', isPlaceChainOn);
   document.getElementById('place-modal-title').textContent = edit ? '✏️ スポットを編集' : '📍 スポットを追加';
   document.getElementById('place-modal').classList.add('open');
   setTimeout(() => document.getElementById('p-name').focus(), 50);
+};
+window.togglePlaceChainCheck = function() {
+  isPlaceChainOn = !isPlaceChainOn;
+  document.getElementById('place-chain-chk').classList.toggle('checked-chain', isPlaceChainOn);
+  document.getElementById('place-chain-name-wrap').classList.toggle('show', isPlaceChainOn);
+  if (isPlaceChainOn) document.getElementById('p-chain-name').focus();
 };
 window.openEditPlaceModal = function(id) {
   const p = places.find(x => x.id === id);
@@ -1199,18 +1424,28 @@ window.savePlace = async function() {
   const name = document.getElementById('p-name').value.trim();
   if (!name) { document.getElementById('p-name').style.borderColor='var(--place)'; document.getElementById('p-name').focus(); return; }
   const pref = document.getElementById('p-pref').value;
+  const chainName = isPlaceChainOn ? document.getElementById('p-chain-name').value.trim() : '';
   const memo = document.getElementById('p-memo').value.trim();
   const visitYear = parseInt(document.getElementById('p-year').value) || null;
   const visitMonth = parseInt(document.getElementById('p-month').value) || null;
   let placeData;
   if (editingPlaceId) {
     const p = places.find(x => x.id === editingPlaceId);
-    if (p) { p.name = name; p.pref = pref; p.memo = memo; p.visitYear = visitYear; p.visitMonth = visitMonth; placeData = p; }
+    if (p) { p.name = name; p.pref = pref; p.isChain = isPlaceChainOn; p.chainName = chainName; p.memo = memo; p.visitYear = visitYear; p.visitMonth = visitMonth; placeData = p; }
   } else {
-    placeData = { id: nextPlaceId++, name, pref, memo, visitYear, visitMonth, addedAt: Date.now() };
+    placeData = { id: nextPlaceId++, name, pref, isChain: isPlaceChainOn, chainName, memo, visitYear, visitMonth, addedAt: Date.now() };
     places.push(placeData);
   }
-  if (placeData) await fsSet('places', placeData.id, { id: placeData.id, name: placeData.name, pref: placeData.pref, memo: placeData.memo, visitYear: placeData.visitYear||null, visitMonth: placeData.visitMonth||null, addedAt: placeData.addedAt });
+  if (placeData) {
+    await fsSet('places', placeData.id, { id: placeData.id, name: placeData.name, pref: placeData.pref, isChain: placeData.isChain, chainName: placeData.chainName, memo: placeData.memo, visitYear: placeData.visitYear||null, visitMonth: placeData.visitMonth||null, addedAt: placeData.addedAt });
+    // 新規追加の場合、画像URLをロード試行
+    if (!editingPlaceId) {
+      try {
+        const url = await getDownloadURL(storageRef(storage, imgStoragePath('place', placeData.id)));
+        placeImages[placeData.id] = url;
+      } catch(e) { /* 画像なし */ }
+    }
+  }
   closePlaceModal(); renderPlacePrefFilters(); renderPlaces();
 };
 
@@ -1353,6 +1588,7 @@ window.saveRest = async function() {
   const visitYear = parseInt(document.getElementById('r-year').value) || null;
   const visitMonth = parseInt(document.getElementById('r-month').value) || null;
   let restData;
+  const isNew = !editingRestId;
   if (editingRestId) {
     const r = restaurants.find(x => x.id === editingRestId);
     if (r) { r.name = name; r.tags = [...restModalTags]; r.isChain = isChainOn; r.chainName = chainName; r.memo = memo; r.visitYear = visitYear; r.visitMonth = visitMonth; restData = r; }
@@ -1360,7 +1596,15 @@ window.saveRest = async function() {
     restData = { id: nextRestId++, name, tags:[...restModalTags], isChain: isChainOn, chainName, memo, visitYear, visitMonth, addedAt: Date.now() };
     restaurants.push(restData);
   }
-  if (restData) await fsSet('restaurants', restData.id, { id: restData.id, name: restData.name, tags: restData.tags, isChain: restData.isChain, chainName: restData.chainName, memo: restData.memo, visitYear: restData.visitYear||null, visitMonth: restData.visitMonth||null, addedAt: restData.addedAt });
+  if (restData) {
+    await fsSet('restaurants', restData.id, { id: restData.id, name: restData.name, tags: restData.tags, isChain: restData.isChain, chainName: restData.chainName, memo: restData.memo, visitYear: restData.visitYear||null, visitMonth: restData.visitMonth||null, addedAt: restData.addedAt });
+    if (isNew) {
+      try {
+        const url = await getDownloadURL(storageRef(storage, imgStoragePath('rest', restData.id)));
+        restImages[restData.id] = url;
+      } catch(e) { /* 画像なし */ }
+    }
+  }
   closeRestModal(); renderRest();
 };
 
