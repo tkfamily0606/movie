@@ -483,9 +483,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
         <div class="toggle-box" id="series-chk">✓</div>
         <span style="font-size:13px;color:var(--text2)">シリーズとして登録する</span>
       </div>
-      <div class="series-input-wrap" id="series-wrap">
-        <input class="form-input" id="m-series" placeholder="シリーズ名（例：鬼滅の刃、バイオハザード）">
-      </div>
+
     </div>
     <div class="form-group">
       <label class="form-label">メモ・感想</label>
@@ -533,9 +531,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
         <div class="toggle-box" id="place-chain-chk">✓</div>
         <span style="font-size:13px;color:var(--text2)">チェーン店として登録する</span>
       </div>
-      <div class="series-input-wrap" id="place-chain-name-wrap">
-        <input class="form-input" id="p-chain-name" placeholder="チェーン名（例：イオン、スターバックス）">
-      </div>
+
     </div>
     <div class="form-group">
       <label class="form-label">メモ</label>
@@ -573,9 +569,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
         <div class="toggle-box" id="chain-chk">✓</div>
         <span style="font-size:13px;color:var(--text2)">チェーン店として登録する</span>
       </div>
-      <div class="series-input-wrap" id="chain-name-wrap">
-        <input class="form-input" id="r-chain-name" placeholder="チェーン名（例：すき家、マクドナルド）">
-      </div>
+
     </div>
     <div class="form-group">
       <label class="form-label">メモ</label>
@@ -1176,10 +1170,8 @@ window.openMovieModal = function(edit) {
   modalTags = edit ? [...edit.tags] : [];
   isSeriesOn = edit ? !!edit.series : false;
   document.getElementById('m-title').value = edit ? edit.title : '';
-  document.getElementById('m-series').value = edit ? (edit.series || '') : '';
   document.getElementById('m-memo').value = edit ? (edit.memo || '') : '';
   document.getElementById('series-chk').classList.toggle('checked', isSeriesOn);
-  document.getElementById('series-wrap').classList.toggle('show', isSeriesOn);
   document.getElementById('movie-modal-title').textContent = edit ? '✏️ 映画を編集' : '🎬 映画を追加';
   document.getElementById('movie-save-btn').textContent = edit ? '更新する' : '保存する';
   renderModalStars(); renderModalTags();
@@ -1214,13 +1206,11 @@ function renderModalTags() {
 window.toggleSeriesCheck = function() {
   isSeriesOn = !isSeriesOn;
   document.getElementById('series-chk').classList.toggle('checked', isSeriesOn);
-  document.getElementById('series-wrap').classList.toggle('show', isSeriesOn);
-  if (isSeriesOn) document.getElementById('m-series').focus();
 };
 window.saveMovie = async function() {
   const title = document.getElementById('m-title').value.trim();
   if (!title) { document.getElementById('m-title').style.borderColor='var(--movie)'; document.getElementById('m-title').focus(); return; }
-  const series = isSeriesOn ? document.getElementById('m-series').value.trim() : '';
+  const series = isSeriesOn ? 'シリーズ' : '';
   const memo = document.getElementById('m-memo').value.trim();
   let movieData;
   if (editingMovieId) {
@@ -1414,10 +1404,8 @@ window.openPlaceModal = function(edit) {
   const mSel = document.getElementById('p-month');
   mSel.value = edit ? (edit.visitMonth||'') : '';
   document.getElementById('p-name').value = edit ? edit.name : '';
-  document.getElementById('p-chain-name').value = edit ? (edit.chainName||'') : '';
   document.getElementById('p-memo').value = edit ? (edit.memo||'') : '';
   document.getElementById('place-chain-chk').classList.toggle('checked-chain', isPlaceChainOn);
-  document.getElementById('place-chain-name-wrap').classList.toggle('show', isPlaceChainOn);
   document.getElementById('place-modal-title').textContent = edit ? '✏️ スポットを編集' : '📍 スポットを追加';
   document.getElementById('place-modal').classList.add('open');
   setTimeout(() => document.getElementById('p-name').focus(), 50);
@@ -1425,8 +1413,6 @@ window.openPlaceModal = function(edit) {
 window.togglePlaceChainCheck = function() {
   isPlaceChainOn = !isPlaceChainOn;
   document.getElementById('place-chain-chk').classList.toggle('checked-chain', isPlaceChainOn);
-  document.getElementById('place-chain-name-wrap').classList.toggle('show', isPlaceChainOn);
-  if (isPlaceChainOn) document.getElementById('p-chain-name').focus();
 };
 window.openEditPlaceModal = function(id) {
   const p = places.find(x => x.id === id);
@@ -1437,7 +1423,7 @@ window.savePlace = async function() {
   const name = document.getElementById('p-name').value.trim();
   if (!name) { document.getElementById('p-name').style.borderColor='var(--place)'; document.getElementById('p-name').focus(); return; }
   const pref = document.getElementById('p-pref').value;
-  const chainName = isPlaceChainOn ? document.getElementById('p-chain-name').value.trim() : '';
+  const chainName = '';
   const memo = document.getElementById('p-memo').value.trim();
   const visitYear = parseInt(document.getElementById('p-year').value) || null;
   const visitMonth = parseInt(document.getElementById('p-month').value) || null;
@@ -1554,13 +1540,11 @@ window.openRestModal = function(edit) {
   restModalTags = edit ? [...(edit.tags||[])] : [];
   isChainOn = edit ? !!edit.isChain : false;
   document.getElementById('r-name').value = edit ? edit.name : '';
-  document.getElementById('r-chain-name').value = edit ? (edit.chainName||'') : '';
   document.getElementById('r-memo').value = edit ? (edit.memo||'') : '';
   populateYearSelect('r-year', edit ? (edit.visitYear||'') : '');
   const mSel = document.getElementById('r-month');
   mSel.value = edit ? (edit.visitMonth||'') : '';
   document.getElementById('chain-chk').classList.toggle('checked-chain', isChainOn);
-  document.getElementById('chain-name-wrap').classList.toggle('show', isChainOn);
   document.getElementById('rest-modal-title').textContent = edit ? '✏️ 飲食店を編集' : '🍽️ 飲食店を追加';
   renderRestTags();
   document.getElementById('rest-hint-tags').innerHTML = REST_HINT_TAGS.map(t =>
@@ -1577,8 +1561,6 @@ window.closeRestModal = function() { document.getElementById('rest-modal').class
 window.toggleChainCheck = function() {
   isChainOn = !isChainOn;
   document.getElementById('chain-chk').classList.toggle('checked-chain', isChainOn);
-  document.getElementById('chain-name-wrap').classList.toggle('show', isChainOn);
-  if (isChainOn) document.getElementById('r-chain-name').focus();
 };
 window.addRestTag = function() {
   const inp = document.getElementById('rest-tag-input');
@@ -1596,7 +1578,7 @@ function renderRestTags() {
 window.saveRest = async function() {
   const name = document.getElementById('r-name').value.trim();
   if (!name) { document.getElementById('r-name').style.borderColor='var(--rest)'; document.getElementById('r-name').focus(); return; }
-  const chainName = isChainOn ? document.getElementById('r-chain-name').value.trim() : '';
+  const chainName = '';
   const memo = document.getElementById('r-memo').value.trim();
   const visitYear = parseInt(document.getElementById('r-year').value) || null;
   const visitMonth = parseInt(document.getElementById('r-month').value) || null;
