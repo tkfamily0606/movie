@@ -247,8 +247,11 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   .item-grid-2col { grid-template-columns: repeat(2, 1fr) !important; }
   .item-grid-2col .item-thumb,
   .item-grid-2col .item-thumb-placeholder { height: 56px; }
-  .item-grid-2col .item-name { font-size: 12px; }
+  .item-grid-2col .item-name { font-size: 12px; padding-right: 0; word-break: break-all; overflow-wrap: anywhere; }
   .item-grid-2col .item-sub { font-size: 10px; gap: 3px; }
+  /* スマホ: card-actionsはサムネイル上に重ねて、タップで表示 */
+  .item-grid-2col .item-card .card-actions { top: 4px; right: 4px; opacity: 0; transition: opacity 0.2s; }
+  .item-grid-2col .item-card.actions-open .card-actions { opacity: 1; }
 }
 
 ::-webkit-scrollbar { width: 6px; }
@@ -927,6 +930,18 @@ function populateYearSelects() {
     sel.innerHTML = `<option value="">年</option>` + years.map(y => `<option value="${y}"${y==cur?' selected':''}>${y}年</option>`).join('');
   });
 }
+
+// ──────────────── Mobile card tap to show actions ────────────────
+document.addEventListener('touchstart', function(e) {
+  const card = e.target.closest('.item-card');
+  // アクションボタン自体のタップは無視
+  if (e.target.closest('.card-actions')) return;
+  // 現在開いているカードを閉じる
+  document.querySelectorAll('.item-card.actions-open').forEach(c => {
+    if (c !== card) c.classList.remove('actions-open');
+  });
+  if (card) card.classList.toggle('actions-open');
+}, { passive: true });
 
 // ──────────────── Tabs ────────────────
 window.switchTab = function(btn) {
