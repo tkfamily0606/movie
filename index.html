@@ -85,8 +85,15 @@ main { max-width: 1280px; margin: 0 auto; padding: 28px 20px; }
 .page-meta { font-size: 12px; color: var(--text2); margin-top: 3px; }
 
 /* TOOLBAR */
-.toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
 select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--white); font-family: 'Noto Sans JP', sans-serif; font-size: 13px; color: var(--text); cursor: pointer; outline: none; }
+
+/* SORT DIRECTION TOGGLE */
+.sort-dir-wrap { display: flex; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+.sort-dir-btn { padding: 9px 11px; border: none; background: var(--white); cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text2); font-family: 'Noto Sans JP', sans-serif; transition: all 0.15s; white-space: nowrap; line-height: 1; display: flex; align-items: center; gap: 4px; }
+.sort-dir-btn + .sort-dir-btn { border-left: 1.5px solid var(--border); }
+.sort-dir-btn:hover { background: var(--surface2); color: var(--text); }
+.sort-dir-btn.active { background: var(--panel-c, #888); color: #fff; font-weight: 700; }
 
 /* TAG FILTERS */
 .tag-filter-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
@@ -181,6 +188,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 .form-select:focus { border-color: var(--focus-c, var(--movie)); }
 
 /* CHAIN FILTER */
+/* ① スポット種別フィルター：スマホで一行に収まるよう flex-wrap: nowrap + overflow-x: auto */
 .rest-filter-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
 .rest-filter-btn { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
 .rest-filter-btn:hover { border-color: var(--rest); color: var(--rest); }
@@ -215,12 +223,28 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 .pref-tooltip { position: fixed; background: #2a2520; color: #fff; padding: 5px 11px; border-radius: 6px; font-size: 12px; font-weight: 700; pointer-events: none; z-index: 500; display: none; }
 .pref-tooltip.show { display: block; }
 
-/* PLACE FILTER */
+/* PLACE FILTER — ① 種別フィルターをスマホで一行スクロール対応 */
 .place-filter-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
 .place-filter-btn { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
 .place-filter-btn:hover { border-color: var(--place); color: var(--place); }
 .place-filter-btn.active { background: var(--place); border-color: var(--place); color: #fff; font-weight: 700; }
 .place-filter-btn.chain-active { background: var(--chain); border-color: var(--chain); color: #fff; font-weight: 700; }
+
+/* ① スポット種別フィルター行をスマホで横スクロール・折り返しなし */
+.place-kind-filter-wrap {
+  display: flex;
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin-bottom: 16px;
+  align-items: center;
+  padding-bottom: 2px;
+}
+.place-kind-filter-wrap::-webkit-scrollbar { display: none; }
+.place-kind-filter-wrap .tag-filter-label { flex-shrink: 0; font-size: 12px; color: var(--text2); font-weight: 700; margin-right: 2px; white-space: nowrap; }
+.place-kind-filter-wrap .place-filter-btn { flex-shrink: 0; }
 
 /* MOVIE SUBTABS */
 .movie-subtab-wrap { display: flex; gap: 4px; margin-bottom: 4px; border-bottom: 2px solid var(--border); padding-bottom: 0; }
@@ -249,10 +273,63 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   .item-grid-2col .item-thumb-placeholder { height: 56px; }
   .item-grid-2col .item-name { font-size: 12px; padding-right: 0; word-break: break-all; overflow-wrap: anywhere; }
   .item-grid-2col .item-sub { font-size: 10px; gap: 3px; }
-  /* スマホ: card-actionsはサムネイル上に重ねて、タップで表示 */
   .item-grid-2col .item-card .card-actions { top: 4px; right: 4px; opacity: 0; transition: opacity 0.2s; }
   .item-grid-2col .item-card.actions-open .card-actions { opacity: 1; }
 }
+
+/* ④ IMAGE POPUP MODAL */
+.img-popup-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.82);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  flex-direction: column;
+  gap: 16px;
+}
+.img-popup-overlay.open { display: flex; }
+.img-popup-img {
+  max-width: 100%;
+  max-height: 70vh;
+  border-radius: 12px;
+  object-fit: contain;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  display: block;
+}
+.img-popup-name {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  max-width: 320px;
+}
+.img-popup-btns {
+  display: flex;
+  gap: 10px;
+}
+.img-popup-btn {
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+.img-popup-btn.change { background: #fff; color: #333; }
+.img-popup-btn.del { background: #dc2626; color: #fff; }
+.img-popup-btn.close { background: rgba(255,255,255,0.15); color: #fff; border: 1.5px solid rgba(255,255,255,0.3); }
+.img-popup-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.img-popup-placeholder-icon { font-size: 56px; opacity: 0.4; }
+.img-popup-placeholder-text { color: rgba(255,255,255,0.6); font-size: 14px; }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -275,6 +352,13 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 
 <!-- SAVE STATUS TOAST -->
 <div id="save-status"></div>
+
+<!-- ④ IMAGE POPUP MODAL -->
+<div class="img-popup-overlay" id="img-popup-overlay" onclick="closeImgPopupOnBg(event)">
+  <div class="img-popup-name" id="img-popup-name"></div>
+  <div id="img-popup-content"></div>
+  <div class="img-popup-btns" id="img-popup-btns"></div>
+</div>
 
 <header>
   <div class="header-inner">
@@ -327,13 +411,17 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 
   <!-- 映画サブパネル -->
   <div id="sub-movies" class="movie-subpanel">
-    <div class="toolbar" style="margin-top:12px">
+    <div class="toolbar" style="margin-top:12px;--panel-c:var(--movie)">
       <select class="sort-sel" id="movie-sort">
         <option value="title">タイトル順</option>
         <option value="rating">評価順</option>
         <option value="added">追加順</option>
         <option value="fav">お気に入り優先</option>
       </select>
+      <div class="sort-dir-wrap">
+        <button class="sort-dir-btn active" id="movie-dir-asc" onclick="setSortDir('movie','asc')">↑ 昇順</button>
+        <button class="sort-dir-btn" id="movie-dir-desc" onclick="setSortDir('movie','desc')">↓ 降順</button>
+      </div>
     </div>
     <div class="tag-filter-wrap" id="tag-filters"></div>
     <div class="fav-filter-wrap" id="movie-fav-filter">
@@ -346,13 +434,17 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 
   <!-- シリーズサブパネル -->
   <div id="sub-series" class="movie-subpanel" style="display:none">
-    <div class="toolbar" style="margin-top:12px">
+    <div class="toolbar" style="margin-top:12px;--panel-c:var(--movie)">
       <select class="sort-sel" id="series-sort">
         <option value="title">タイトル順</option>
         <option value="rating">評価順</option>
         <option value="added">追加順</option>
         <option value="fav">お気に入り優先</option>
       </select>
+      <div class="sort-dir-wrap">
+        <button class="sort-dir-btn active" id="series-dir-asc" onclick="setSortDir('series','asc')">↑ 昇順</button>
+        <button class="sort-dir-btn" id="series-dir-desc" onclick="setSortDir('series','desc')">↓ 降順</button>
+      </div>
     </div>
     <div class="tag-filter-wrap" id="series-tag-filters"></div>
     <div class="fav-filter-wrap" id="series-fav-filter">
@@ -373,20 +465,25 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     </div>
     <button class="add-btn place-btn" onclick="openPlaceModal()">＋ スポットを追加</button>
   </div>
-  <div class="toolbar">
+  <div class="toolbar" style="--panel-c:var(--place)">
+    <!-- ② 追加順を削除 -->
     <select class="sort-sel" id="place-sort">
-      <option value="added">追加順</option>
       <option value="name">名前順</option>
       <option value="pref">都道府県順</option>
       <option value="visited">訪問年順</option>
     </select>
+    <div class="sort-dir-wrap">
+      <button class="sort-dir-btn active" id="place-dir-asc" onclick="setSortDir('place','asc')">↑ 昇順</button>
+      <button class="sort-dir-btn" id="place-dir-desc" onclick="setSortDir('place','desc')">↓ 降順</button>
+    </div>
   </div>
   <div class="place-filter-wrap" id="place-pref-filters"></div>
-  <div class="rest-filter-wrap" id="place-chain-filters">
+  <!-- ① 種別フィルターを横スクロール1行に -->
+  <div class="place-kind-filter-wrap" id="place-chain-filters">
     <span class="tag-filter-label">種別：</span>
     <button class="place-filter-btn active" data-cf="all" onclick="setPlaceChainFilter(this)">すべて</button>
-    <button class="place-filter-btn" data-cf="chain" onclick="setPlaceChainFilter(this)">🔗 チェーン店</button>
-    <button class="place-filter-btn" data-cf="local" onclick="setPlaceChainFilter(this)">🏠 個別スポット</button>
+    <button class="place-filter-btn" data-cf="chain" onclick="setPlaceChainFilter(this)">🔗 チェーン</button>
+    <button class="place-filter-btn" data-cf="local" onclick="setPlaceChainFilter(this)">🏠 個別</button>
   </div>
   <div class="year-filter-wrap" id="place-year-filters" style="--panel-c:var(--place)"></div>
   <div class="cards-grid item-grid-2col" id="places-grid" style="grid-template-columns: repeat(auto-fill, minmax(180px, 1fr))"></div>
@@ -401,12 +498,16 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     </div>
     <button class="add-btn rest-btn" onclick="openRestModal()">＋ 飲食店を追加</button>
   </div>
-  <div class="toolbar">
+  <div class="toolbar" style="--panel-c:var(--rest)">
     <select class="sort-sel" id="rest-sort">
-      <option value="added">追加順</option>
       <option value="name">名前順</option>
+      <option value="added">追加順</option>
       <option value="tag">カテゴリ順</option>
     </select>
+    <div class="sort-dir-wrap">
+      <button class="sort-dir-btn active" id="rest-dir-asc" onclick="setSortDir('rest','asc')">↑ 昇順</button>
+      <button class="sort-dir-btn" id="rest-dir-desc" onclick="setSortDir('rest','desc')">↓ 降順</button>
+    </div>
   </div>
   <div class="rest-filter-wrap" id="rest-filters">
     <span class="tag-filter-label">絞り込み：</span>
@@ -486,7 +587,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
         <div class="toggle-box" id="series-chk">✓</div>
         <span style="font-size:13px;color:var(--text2)">シリーズとして登録する</span>
       </div>
-
     </div>
     <div class="form-group">
       <label class="form-label">メモ・感想</label>
@@ -534,7 +634,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
         <div class="toggle-box" id="place-chain-chk">✓</div>
         <span style="font-size:13px;color:var(--text2)">チェーン店として登録する</span>
       </div>
-
     </div>
     <div class="form-group">
       <label class="form-label">メモ</label>
@@ -572,7 +671,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
         <div class="toggle-box" id="chain-chk">✓</div>
         <span style="font-size:13px;color:var(--text2)">チェーン店として登録する</span>
       </div>
-
     </div>
     <div class="form-group">
       <label class="form-label">メモ</label>
@@ -803,7 +901,7 @@ async function fsDel(colName, id) {
   }
 }
 
-// ──────────────── Firebase connect (auto, hardcoded config) ────────────────
+// ──────────────── Firebase connect ────────────────
 async function initAndLoad() {
   const ls = document.getElementById('loading-screen');
   ls.style.display = 'flex';
@@ -831,7 +929,6 @@ async function loadFirestoreData() {
   } else {
     movies = getDefaultMovies();
     nextMovieId = movies.length + 1;
-    // Save defaults
     for (const m of movies) await fsSet('movies', m.id, { id: m.id, title: m.title, rating: m.rating, tags: m.tags, series: m.series, memo: m.memo, fav: false, addedAt: m.addedAt });
   }
   // places
@@ -844,10 +941,20 @@ async function loadFirestoreData() {
     nextPlaceId = places.length + 1;
     for (const p of places) await fsSet('places', p.id, { id: p.id, name: p.name, pref: p.pref, isChain: false, chainName: '', memo: p.memo, visitYear: null, visitMonth: null, addedAt: p.addedAt });
   }
-  // restaurants
+  // restaurants — ③ addedAt を数値で正しく読み込む
   const restData = await fsGet('restaurants');
   if (restData && restData.length > 0) {
-    restaurants = restData.map(d => ({ id: d.id, name: d.name||'', tags: d.tags||[], isChain: !!d.isChain, chainName: d.chainName||'', memo: d.memo||'', visitYear: d.visitYear||null, visitMonth: d.visitMonth||null, addedAt: d.addedAt||0 }));
+    restaurants = restData.map(d => ({
+      id: d.id,
+      name: d.name||'',
+      tags: d.tags||[],
+      isChain: !!d.isChain,
+      chainName: d.chainName||'',
+      memo: d.memo||'',
+      visitYear: d.visitYear||null,
+      visitMonth: d.visitMonth||null,
+      addedAt: typeof d.addedAt === 'number' ? d.addedAt : Number(d.addedAt) || 0
+    }));
     nextRestId = Math.max(...restaurants.map(r => r.id), 0) + 1;
   } else {
     restaurants = getDefaultRestaurants();
@@ -864,7 +971,6 @@ async function loadFirestoreData() {
   }
 }
 
-// ──────────────── Auto-connect on load ────────────────
 initAndLoad();
 
 // ──────────────── App State ────────────────
@@ -890,12 +996,24 @@ let activePlaceChainFilter = 'all';
 let pendingDelete = null;
 let pendingImgTarget = null;
 
+// ──────────────── Sort direction state ────────────────
+const sortDir = { movie: 'asc', series: 'asc', place: 'asc', rest: 'asc' };
+
+window.setSortDir = function(panel, dir) {
+  sortDir[panel] = dir;
+  document.getElementById(`${panel}-dir-asc`).classList.toggle('active', dir === 'asc');
+  document.getElementById(`${panel}-dir-desc`).classList.toggle('active', dir === 'desc');
+  if (panel === 'movie') renderMovies();
+  else if (panel === 'series') renderSeries();
+  else if (panel === 'place') renderPlaces();
+  else if (panel === 'rest') renderRest();
+};
+
 // ──────────────── Init App ────────────────
 async function initApp() {
   initLastUpdated();
   populateYearSelects();
 
-  // ソートをJSで直接バインド（moduleスコープ問題を回避）
   const sortBindings = [
     ['movie-sort',  () => renderMovies()],
     ['series-sort', () => renderSeries()],
@@ -931,12 +1049,10 @@ function populateYearSelects() {
   });
 }
 
-// ──────────────── Mobile card tap to show actions ────────────────
+// ──────────────── Mobile card tap ────────────────
 document.addEventListener('touchstart', function(e) {
   const card = e.target.closest('.item-card');
-  // アクションボタン自体のタップは無視
   if (e.target.closest('.card-actions')) return;
-  // 現在開いているカードを閉じる
   document.querySelectorAll('.item-card.actions-open').forEach(c => {
     if (c !== card) c.classList.remove('actions-open');
   });
@@ -1067,6 +1183,7 @@ function updateMovieTotalBadge() {
 
 function renderMovies() {
   const sortVal = document.getElementById('movie-sort') ? document.getElementById('movie-sort').value : 'title';
+  const dir = sortDir.movie;
   let list = movies.filter(m => {
     if (m.series) return false;
     if (activeTagFilter !== 'all' && !m.tags.includes(activeTagFilter)) return false;
@@ -1077,6 +1194,7 @@ function renderMovies() {
   else if (sortVal === 'added') list = [...list].sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
   else if (sortVal === 'fav') list = [...list].sort((a,b) => (b.fav?1:0) - (a.fav?1:0) || a.title.localeCompare(b.title,'ja'));
   else list = [...list].sort((a,b) => a.title.localeCompare(b.title,'ja'));
+  if (dir === 'desc') list = [...list].reverse();
 
   const grid = document.getElementById('movies-grid');
   if (!grid) return;
@@ -1113,6 +1231,7 @@ function renderMovies() {
 
 function renderSeries() {
   const sortVal = document.getElementById('series-sort') ? document.getElementById('series-sort').value : 'title';
+  const dir = sortDir.series;
   let list = movies.filter(m => {
     if (!m.series) return false;
     if (activeSeriesTagFilter !== 'all' && !m.tags.includes(activeSeriesTagFilter)) return false;
@@ -1123,6 +1242,7 @@ function renderSeries() {
   else if (sortVal === 'added') list = [...list].sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
   else if (sortVal === 'fav') list = [...list].sort((a,b) => (b.fav?1:0) - (a.fav?1:0) || a.title.localeCompare(b.title,'ja'));
   else list = [...list].sort((a,b) => a.title.localeCompare(b.title,'ja'));
+  if (dir === 'desc') list = [...list].reverse();
 
   const grid = document.getElementById('series-grid');
   if (!grid) return;
@@ -1239,8 +1359,7 @@ window.saveMovie = async function() {
   closeMovieModal(); renderTagFilters(); renderMovies(); renderSeries();
 };
 
-// ──────────────── Places ────────────────
-// ── Image storage via Firebase Storage ──
+// ──────────────── Image Storage ────────────────
 function imgStoragePath(type, id) { return `images/${type}/${id}`; }
 
 window.handleImgUpload = async function(e, type) {
@@ -1249,7 +1368,6 @@ window.handleImgUpload = async function(e, type) {
   const targetId = pendingImgTarget.id;
   e.target.value = '';
   pendingImgTarget = null;
-  // show loading placeholder
   if (type === 'place') { placeImages[targetId] = '__loading__'; renderPlaces(); }
   else { restImages[targetId] = '__loading__'; renderRest(); }
   try {
@@ -1267,10 +1385,82 @@ window.handleImgUpload = async function(e, type) {
     showSaveStatus(false, '画像の保存に失敗しました');
   }
 };
-window.triggerImgUpload = function(type, id) {
+
+// ④ 画像ポップアップ
+let imgPopupTarget = null; // { type: 'place'|'rest', id, name }
+
+window.openImgPopup = function(type, id, name) {
+  imgPopupTarget = { type, id, name };
+  const overlay = document.getElementById('img-popup-overlay');
+  const nameEl = document.getElementById('img-popup-name');
+  const contentEl = document.getElementById('img-popup-content');
+  const btnsEl = document.getElementById('img-popup-btns');
+  nameEl.textContent = name;
+  const imgUrl = type === 'place' ? placeImages[id] : restImages[id];
+  if (imgUrl && imgUrl !== '__loading__') {
+    // 画像あり → 表示 + 変更・削除ボタン
+    contentEl.innerHTML = `<img class="img-popup-img" src="${imgUrl}" alt="${name}">`;
+    btnsEl.innerHTML = `
+      <button class="img-popup-btn change" onclick="triggerImgUploadFromPopup()">📷 変更</button>
+      <button class="img-popup-btn del" onclick="deleteImgFromPopup()">🗑️ 削除</button>
+      <button class="img-popup-btn close" onclick="closeImgPopup()">閉じる</button>
+    `;
+  } else {
+    // 画像なし → アップロード促進
+    const icon = type === 'place' ? '📍' : '🍽️';
+    contentEl.innerHTML = `
+      <div class="img-popup-placeholder">
+        <div class="img-popup-placeholder-icon">${icon}</div>
+        <div class="img-popup-placeholder-text">まだ写真がありません</div>
+      </div>`;
+    btnsEl.innerHTML = `
+      <button class="img-popup-btn change" onclick="triggerImgUploadFromPopup()">📷 写真を追加</button>
+      <button class="img-popup-btn close" onclick="closeImgPopup()">閉じる</button>
+    `;
+  }
+  overlay.classList.add('open');
+};
+
+window.closeImgPopup = function() {
+  document.getElementById('img-popup-overlay').classList.remove('open');
+  imgPopupTarget = null;
+};
+
+window.closeImgPopupOnBg = function(e) {
+  if (e.target === document.getElementById('img-popup-overlay')) closeImgPopup();
+};
+
+window.triggerImgUploadFromPopup = function() {
+  if (!imgPopupTarget) return;
+  const { type, id } = imgPopupTarget;
+  closeImgPopup();
   pendingImgTarget = { type, id };
   document.getElementById(type + '-img-input').click();
 };
+
+window.deleteImgFromPopup = async function() {
+  if (!imgPopupTarget || !storage) return;
+  const { type, id } = imgPopupTarget;
+  closeImgPopup();
+  try {
+    await deleteObject(storageRef(storage, imgStoragePath(type, id)));
+    if (type === 'place') { delete placeImages[id]; renderPlaces(); }
+    else { delete restImages[id]; renderRest(); }
+    showSaveStatus(true, '✓ 画像を削除しました');
+  } catch(e) {
+    console.error(e);
+    showSaveStatus(false, '画像の削除に失敗しました');
+  }
+};
+
+window.triggerImgUpload = function(type, id) {
+  // カードからの直接タップはポップアップへ委譲
+  const name = type === 'place'
+    ? (places.find(p => p.id === id) || {}).name || ''
+    : (restaurants.find(r => r.id === id) || {}).name || '';
+  openImgPopup(type, id, name);
+};
+
 async function deleteImg(type, id) {
   if (!storage) return;
   try {
@@ -1278,6 +1468,7 @@ async function deleteImg(type, id) {
     await deleteObject(sRef);
   } catch(e) { /* ファイルが存在しない場合は無視 */ }
 }
+
 async function loadAllImages() {
   if (!storage) return;
   const all = [
@@ -1293,6 +1484,7 @@ async function loadAllImages() {
   }));
 }
 
+// ──────────────── Places ────────────────
 function getPlacePrefList() {
   const s = new Set();
   places.forEach(p => { if (p.pref) s.add(p.pref); });
@@ -1335,14 +1527,15 @@ window.setPlaceYearFilter = function(btn) {
 };
 function renderPlaces() {
   const sortVal = document.getElementById('place-sort').value;
+  const dir = sortDir.place;
   let list = places.filter(p => {
     const matchPref = activePlacePrefFilter === 'all' || p.pref === activePlacePrefFilter;
     const matchYear = activeYearFilterPlace === 'all' || String(p.visitYear) === String(activeYearFilterPlace);
     const matchChain = activePlaceChainFilter === 'all' || (activePlaceChainFilter === 'chain' && p.isChain) || (activePlaceChainFilter === 'local' && !p.isChain);
     return matchPref && matchYear && matchChain;
   });
-  if (sortVal === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
-  else if (sortVal === 'pref') list = [...list].sort((a,b) => {
+  // ② 追加順削除 → name / pref / visited のみ
+  if (sortVal === 'pref') list = [...list].sort((a,b) => {
     const ai = ALL_PREFS.indexOf(a.pref), bi = ALL_PREFS.indexOf(b.pref);
     if (ai < 0 && bi < 0) return 0; if (ai < 0) return 1; if (bi < 0) return -1;
     return ai - bi || a.name.localeCompare(b.name,'ja');
@@ -1352,7 +1545,8 @@ function renderPlaces() {
     const by2 = (b.visitYear||0)*100+(b.visitMonth||0);
     return by2 - ay;
   });
-  else list = [...list].sort((a,b) => a.addedAt - b.addedAt);
+  else list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja')); // name or fallback
+  if (dir === 'desc') list = [...list].reverse();
 
   const grid = document.getElementById('places-grid');
   if (!list.length) { grid.innerHTML = `<div class="no-results">該当なし</div>`; return; }
@@ -1361,8 +1555,8 @@ function renderPlaces() {
     const thumb = img === '__loading__'
       ? `<div class="item-thumb-placeholder"><div class="item-thumb-placeholder-label"><span class="loading-spinner-sm"></span>アップロード中…</div></div>`
       : img
-        ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('place',${p.id})" style="cursor:pointer">`
-        : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('place',${p.id})">
+        ? `<img class="item-thumb" src="${img}" alt="" onclick="openImgPopup('place',${p.id},'${p.name.replace(/'/g,"\\'")}')" style="cursor:pointer">`
+        : `<div class="item-thumb-placeholder" onclick="openImgPopup('place',${p.id},'${p.name.replace(/'/g,"\\'")}')">
              <div class="item-thumb-placeholder-label"><span>📍</span>写真</div>
            </div>`;
     const visitLabel = p.visitYear ? `<span style="font-size:10px;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:10px">${p.visitYear}年${p.visitMonth?p.visitMonth+'月':''}</span>` : '';
@@ -1452,7 +1646,6 @@ window.savePlace = async function() {
   }
   if (placeData) {
     await fsSet('places', placeData.id, { id: placeData.id, name: placeData.name, pref: placeData.pref, isChain: placeData.isChain, chainName: placeData.chainName, memo: placeData.memo, visitYear: placeData.visitYear||null, visitMonth: placeData.visitMonth||null, addedAt: placeData.addedAt });
-    // 新規追加の場合、画像URLをロード試行
     if (!editingPlaceId) {
       try {
         const url = await getDownloadURL(storageRef(storage, imgStoragePath('place', placeData.id)));
@@ -1495,20 +1688,28 @@ window.setRestYearFilter = function(btn) {
   renderRestYearFilters(); renderRest();
 };
 
+// ③ 飲食店の追加順ソート修正: addedAt の数値比較を確実に
 function renderRest() {
   const sortVal = document.getElementById('rest-sort').value;
+  const dir = sortDir.rest;
   let list = restaurants.filter(r => {
     const matchF = activeRestFilter === 'all' || (activeRestFilter === 'chain' && r.isChain) || (activeRestFilter === 'local' && !r.isChain);
     const matchYear = activeYearFilterRest === 'all' || String(r.visitYear) === String(activeYearFilterRest);
     return matchF && matchYear;
   });
-  if (sortVal === 'name') list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
-  else if (sortVal === 'tag') list = [...list].sort((a,b) => {
-    const at = (a.tags && a.tags[0]) || '\uFFFF';
-    const bt = (b.tags && b.tags[0]) || '\uFFFF';
-    return at.localeCompare(bt,'ja') || a.name.localeCompare(b.name,'ja');
-  });
-  else list = [...list].sort((a,b) => a.addedAt - b.addedAt);
+  if (sortVal === 'added') {
+    list = [...list].sort((a,b) => (Number(a.addedAt)||0) - (Number(b.addedAt)||0));
+  } else if (sortVal === 'tag') {
+    list = [...list].sort((a,b) => {
+      const at = (a.tags && a.tags[0]) || '\uFFFF';
+      const bt = (b.tags && b.tags[0]) || '\uFFFF';
+      return at.localeCompare(bt,'ja') || a.name.localeCompare(b.name,'ja');
+    });
+  } else {
+    // name (default)
+    list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
+  }
+  if (dir === 'desc') list = [...list].reverse();
 
   const grid = document.getElementById('rest-grid');
   if (!list.length) { grid.innerHTML = `<div class="no-results">該当なし</div>`; return; }
@@ -1521,8 +1722,8 @@ function renderRest() {
     const thumb = img === '__loading__'
       ? `<div class="item-thumb-placeholder"><div class="item-thumb-placeholder-label"><span class="loading-spinner-sm"></span>アップロード中…</div></div>`
       : img
-        ? `<img class="item-thumb" src="${img}" alt="" onclick="triggerImgUpload('rest',${r.id})" style="cursor:pointer">`
-        : `<div class="item-thumb-placeholder" onclick="triggerImgUpload('rest',${r.id})">
+        ? `<img class="item-thumb" src="${img}" alt="" onclick="openImgPopup('rest',${r.id},'${r.name.replace(/'/g,"\\'")}')" style="cursor:pointer">`
+        : `<div class="item-thumb-placeholder" onclick="openImgPopup('rest',${r.id},'${r.name.replace(/'/g,"\\'")}')">
              <div class="item-thumb-placeholder-label"><span>🍽️</span>写真</div>
            </div>`;
     const visitLabel = r.visitYear ? `<span style="font-size:10px;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:10px">${r.visitYear}年${r.visitMonth?r.visitMonth+'月':''}</span>` : '';
