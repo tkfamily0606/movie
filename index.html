@@ -138,6 +138,11 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 .item-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; transition: all 0.15s; position: relative; display: flex; flex-direction: column; }
 .item-card:hover { border-color: var(--panel-c, #888); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.09); }
 .item-thumb { width: 100%; height: 72px; object-fit: cover; display: block; background: var(--surface2); flex-shrink: 0; cursor: pointer; }
+
+/* ★ 遅延ロード用: data-src を持つ img は最初は非表示 → JS で src セット後にフェードイン */
+.item-thumb[data-src] { opacity: 0; transition: opacity 0.3s; }
+.item-thumb.loaded { opacity: 1; }
+
 .item-thumb-placeholder { width: 100%; height: 72px; display: flex; align-items: center; justify-content: center; background: var(--surface2); flex-shrink: 0; cursor: pointer; transition: background 0.15s; position: relative; overflow: hidden; }
 .item-thumb-placeholder:hover { background: var(--border); }
 .item-thumb-placeholder-label { font-size: 11px; color: var(--text3); display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none; }
@@ -899,19 +904,14 @@ async function initAndLoad() {
     return;
   }
 
-  // ローディング画面を消してUIを表示
   ls.style.display = 'none';
-
-  // データが揃ったら即座にUIを初期化・表示
   await initApp();
 
-  // ★ 画像ロードはUI表示後に非同期で実行（ノンブロッキング）
-  // これによりUIが先に表示され、画像は後からカードに反映される
-  loadAllImagesAsync();
+  // ★ 画像URLをバックグラウンドでキャッシュ（遅延ロードは IntersectionObserver が担う）
+  prefetchImageUrls();
 }
 
 async function loadFirestoreData() {
-  // movies
   const moviesData = await fsGet('movies');
   if (moviesData && moviesData.length > 0) {
     movies = moviesData.map(d => ({ id: d.id, title: d.title||'', rating: Number(d.rating)||0, tags: d.tags||[], series: d.series||'', memo: d.memo||'', fav: !!d.fav, addedAt: d.addedAt||0 }));
@@ -921,7 +921,6 @@ async function loadFirestoreData() {
     nextMovieId = movies.length + 1;
     for (const m of movies) await fsSet('movies', m.id, { id: m.id, title: m.title, rating: m.rating, tags: m.tags, series: m.series, memo: m.memo, fav: false, addedAt: m.addedAt });
   }
-  // places
   const placesData = await fsGet('places');
   if (placesData && placesData.length > 0) {
     places = placesData.map(d => ({ id: d.id, name: d.name||'', pref: d.pref||'', isChain: !!d.isChain, chainName: d.chainName||'', memo: d.memo||'', visitYear: d.visitYear||null, visitMonth: d.visitMonth||null, addedAt: d.addedAt||0 }));
@@ -931,18 +930,11 @@ async function loadFirestoreData() {
     nextPlaceId = places.length + 1;
     for (const p of places) await fsSet('places', p.id, { id: p.id, name: p.name, pref: p.pref, isChain: false, chainName: '', memo: p.memo, visitYear: null, visitMonth: null, addedAt: p.addedAt });
   }
-  // restaurants
   const restData = await fsGet('restaurants');
   if (restData && restData.length > 0) {
     restaurants = restData.map(d => ({
-      id: d.id,
-      name: d.name||'',
-      tags: d.tags||[],
-      isChain: !!d.isChain,
-      chainName: d.chainName||'',
-      memo: d.memo||'',
-      visitYear: d.visitYear||null,
-      visitMonth: d.visitMonth||null,
+      id: d.id, name: d.name||'', tags: d.tags||[], isChain: !!d.isChain, chainName: d.chainName||'',
+      memo: d.memo||'', visitYear: d.visitYear||null, visitMonth: d.visitMonth||null,
       addedAt: typeof d.addedAt === 'number' ? d.addedAt : Number(d.addedAt) || 0
     }));
     nextRestId = Math.max(...restaurants.map(r => r.id), 0) + 1;
@@ -951,7 +943,6 @@ async function loadFirestoreData() {
     nextRestId = restaurants.length + 1;
     for (const r of restaurants) await fsSet('restaurants', r.id, { id: r.id, name: r.name, tags: r.tags, isChain: r.isChain, chainName: r.chainName, memo: r.memo, visitYear: null, visitMonth: null, addedAt: r.addedAt });
   }
-  // prefs
   const prefsDoc = await (async () => {
     try { const d = await getDoc(doc(db, 'settings', 'prefs')); return d.exists() ? d.data() : null; }
     catch(e) { return null; }
@@ -964,36 +955,77 @@ async function loadFirestoreData() {
   }
 }
 
-// ★ 修正箇所①: 画像をノンブロッキングで並列ロード
-// 各アイテムのURLを取得したら即座にカードを更新する（全部揃うまで待たない）
-async function loadAllImagesAsync() {
+// ────────────────────────────────────────────────────────
+// ★ 修正①: 画像URLをバックグラウンドでプリフェッチ
+//    URLが取れたら即座に対象カードの img[data-src] を更新する
+// ────────────────────────────────────────────────────────
+async function prefetchImageUrls() {
   if (!storage) return;
-
   const tasks = [
     ...places.map(p => ({ type: 'place', id: p.id })),
     ...restaurants.map(r => ({ type: 'rest', id: r.id }))
   ];
-
-  // バッチサイズを制限して同時リクエスト数を抑える
-  const BATCH_SIZE = 10;
-  for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
-    const batch = tasks.slice(i, i + BATCH_SIZE);
+  const BATCH = 8;
+  for (let i = 0; i < tasks.length; i += BATCH) {
+    const batch = tasks.slice(i, i + BATCH);
     await Promise.allSettled(batch.map(async ({ type, id }) => {
       try {
         const url = await getDownloadURL(storageRef(storage, imgStoragePath(type, id)));
-        if (type === 'place') {
-          placeImages[id] = url;
-        } else {
-          restImages[id] = url;
-        }
-      } catch(e) {
-        // 画像なし = 正常（not-found エラーを無視）
-      }
+        if (type === 'place') placeImages[id] = url;
+        else restImages[id] = url;
+        // URLが取れたカードの data-src を実際の src に差し替え（遅延ロードと連携）
+        applyImageUrl(type, id, url);
+      } catch(e) { /* 画像なし = 正常 */ }
     }));
-    // バッチ完了ごとにUIを更新（画像が順次表示される）
-    renderPlaces();
-    renderRest();
   }
+}
+
+// カードDOM内の data-src 付き img を探してURLを適用する
+function applyImageUrl(type, id, url) {
+  const selector = `img[data-type="${type}"][data-id="${id}"]`;
+  document.querySelectorAll(selector).forEach(img => {
+    img.dataset.src = url;
+    // すでに IntersectionObserver が観測中なら即チェック
+    if (lazyObserver) lazyObserver.observe(img);
+  });
+}
+
+// ────────────────────────────────────────────────────────
+// ★ 修正②: IntersectionObserver による遅延ロード
+//    画面内に入った img[data-src] だけ実際にロードする
+// ────────────────────────────────────────────────────────
+let lazyObserver = null;
+
+function initLazyObserver() {
+  if (!('IntersectionObserver' in window)) {
+    // 非対応ブラウザは全部即時ロード
+    lazyObserver = { observe: (img) => loadImg(img), unobserve: () => {} };
+    return;
+  }
+  lazyObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        loadImg(entry.target);
+        lazyObserver.unobserve(entry.target);
+      }
+    });
+  }, { rootMargin: '120px' }); // 少し手前からロード開始
+}
+
+function loadImg(img) {
+  const src = img.dataset.src;
+  if (!src || src === '__loading__' || img.src === src) return;
+  img.src = src;
+  img.onload = () => img.classList.add('loaded');
+  img.onerror = () => img.classList.add('loaded'); // エラーでも表示解除
+}
+
+// 既存のすべての lazy img を Observer に登録
+function observeAllLazyImgs() {
+  if (!lazyObserver) return;
+  document.querySelectorAll('img[data-src]').forEach(img => {
+    lazyObserver.observe(img);
+  });
 }
 
 initAndLoad();
@@ -1037,6 +1069,7 @@ window.setSortDir = function(panel, dir) {
 // ──────────────── Init App ────────────────
 async function initApp() {
   initLastUpdated();
+  initLazyObserver();
   populateYearSelects();
 
   const sortBindings = [
@@ -1050,7 +1083,6 @@ async function initApp() {
     if (el) { el.addEventListener('change', fn); el.addEventListener('input', fn); }
   });
 
-  // ★ 修正箇所②: 画像ロードを待たずにUIを即座に描画
   renderTagFilters();
   renderMovies();
   renderSeries();
@@ -1090,6 +1122,8 @@ window.switchTab = function(btn) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(btn.dataset.panel).classList.add('active');
+  // タブ切り替え後に遅延ロード対象を再スキャン
+  requestAnimationFrame(observeAllLazyImgs);
 };
 
 window.switchMovieSub = function(btn) {
@@ -1389,23 +1423,68 @@ window.saveMovie = async function() {
 // ──────────────── Image Storage ────────────────
 function imgStoragePath(type, id) { return `images/${type}/${id}`; }
 
+// ────────────────────────────────────────────────────────
+// ★ 修正③: アップロード前に Canvas でリサイズ・圧縮
+//    幅600px・品質70%に縮小してから Firebase Storage にアップ
+// ────────────────────────────────────────────────────────
+const IMG_MAX_WIDTH  = 600;   // px
+const IMG_MAX_HEIGHT = 600;   // px
+const IMG_QUALITY    = 0.70;  // JPEG品質 0〜1
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      // アスペクト比を維持してリサイズ
+      if (width > IMG_MAX_WIDTH || height > IMG_MAX_HEIGHT) {
+        const ratio = Math.min(IMG_MAX_WIDTH / width, IMG_MAX_HEIGHT / height);
+        width  = Math.round(width  * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width  = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(
+        blob => blob ? resolve(blob) : reject(new Error('圧縮失敗')),
+        'image/jpeg',
+        IMG_QUALITY
+      );
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 window.handleImgUpload = async function(e, type) {
   const file = e.target.files[0];
   if (!file || !pendingImgTarget || !storage) return;
   const targetId = pendingImgTarget.id;
   e.target.value = '';
   pendingImgTarget = null;
+
   // アップロード中表示
   if (type === 'place') { placeImages[targetId] = '__loading__'; renderPlaces(); }
   else { restImages[targetId] = '__loading__'; renderRest(); }
+
   try {
+    // ★ 圧縮してからアップロード
+    const compressed = await compressImage(file);
+    const originalKB  = Math.round(file.size / 1024);
+    const compressedKB = Math.round(compressed.size / 1024);
+    console.log(`画像圧縮: ${originalKB}KB → ${compressedKB}KB`);
+
     const path = imgStoragePath(type, targetId);
     const sRef = storageRef(storage, path);
-    await uploadBytes(sRef, file);
+    await uploadBytes(sRef, compressed);
     const url = await getDownloadURL(sRef);
+
     if (type === 'place') { placeImages[targetId] = url; renderPlaces(); }
     else { restImages[targetId] = url; renderRest(); }
-    showSaveStatus(true, '✓ 画像を保存しました');
+    showSaveStatus(true, `✓ 画像を保存しました（${compressedKB}KB）`);
   } catch(err) {
     console.error('画像アップロード失敗:', err);
     if (type === 'place') { delete placeImages[targetId]; renderPlaces(); }
@@ -1534,6 +1613,38 @@ window.setPlaceYearFilter = function(btn) {
   activeYearFilterPlace = btn.dataset.yr;
   renderPlaceYearFilters(); renderPlaces();
 };
+
+// ────────────────────────────────────────────────────────
+// ★ 修正④: カード描画を遅延ロード対応に変更
+//    img は src を空にして data-src / data-type / data-id を持たせる
+//    → IntersectionObserver が画面内に入ったときに src をセット
+// ────────────────────────────────────────────────────────
+function makeThumbHTML(type, id, name, imgUrl) {
+  const escapedName = name.replace(/'/g, "\\'");
+  const icon = type === 'place' ? '📍' : '🍽️';
+  const label = type === 'place' ? '写真' : '写真';
+
+  if (imgUrl === '__loading__') {
+    return `<div class="item-thumb-placeholder">
+      <div class="item-thumb-placeholder-label"><span class="loading-spinner-sm"></span>アップロード中…</div>
+    </div>`;
+  }
+  if (imgUrl) {
+    // data-src を使って遅延ロード。src は空のまま
+    return `<img class="item-thumb"
+      src=""
+      data-src="${imgUrl}"
+      data-type="${type}"
+      data-id="${id}"
+      alt=""
+      onclick="openImgPopup('${type}',${id},'${escapedName}')"
+      style="cursor:pointer">`;
+  }
+  return `<div class="item-thumb-placeholder" onclick="openImgPopup('${type}',${id},'${escapedName}')">
+    <div class="item-thumb-placeholder-label"><span>${icon}</span>${label}</div>
+  </div>`;
+}
+
 function renderPlaces() {
   const sortVal = document.getElementById('place-sort').value;
   const dir = sortDir.place;
@@ -1559,14 +1670,7 @@ function renderPlaces() {
   const grid = document.getElementById('places-grid');
   if (!list.length) { grid.innerHTML = `<div class="no-results">該当なし</div>`; return; }
   grid.innerHTML = list.map((p) => {
-    const img = placeImages[p.id];
-    const thumb = img === '__loading__'
-      ? `<div class="item-thumb-placeholder"><div class="item-thumb-placeholder-label"><span class="loading-spinner-sm"></span>アップロード中…</div></div>`
-      : img
-        ? `<img class="item-thumb" src="${img}" alt="" onclick="openImgPopup('place',${p.id},'${p.name.replace(/'/g,"\\'")}')" style="cursor:pointer">`
-        : `<div class="item-thumb-placeholder" onclick="openImgPopup('place',${p.id},'${p.name.replace(/'/g,"\\'")}')">
-             <div class="item-thumb-placeholder-label"><span>📍</span>写真</div>
-           </div>`;
+    const thumb = makeThumbHTML('place', p.id, p.name, placeImages[p.id]);
     const visitLabel = p.visitYear ? `<span style="font-size:10px;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:10px">${p.visitYear}年${p.visitMonth?p.visitMonth+'月':''}</span>` : '';
     return `<div class="item-card" style="--panel-c:var(--place)">
       <div class="card-actions">
@@ -1585,6 +1689,10 @@ function renderPlaces() {
       </div>
     </div>`;
   }).join('');
+
+  // 描画後に遅延ロード Observer を登録
+  requestAnimationFrame(observeAllLazyImgs);
+
   const chainCount = places.filter(p => p.isChain).length;
   document.getElementById('places-meta').textContent = `全 ${places.length} 箇所${chainCount ? `　|　チェーン店 ${chainCount} 箇所` : ''}`;
   document.getElementById('cnt-places').textContent = places.length;
@@ -1718,14 +1826,7 @@ function renderRest() {
       const s = tagStyle(t);
       return `<span class="tag-chip" style="background:${s.bg};color:${s.color}">${t}</span>`;
     }).join('');
-    const img = restImages[r.id];
-    const thumb = img === '__loading__'
-      ? `<div class="item-thumb-placeholder"><div class="item-thumb-placeholder-label"><span class="loading-spinner-sm"></span>アップロード中…</div></div>`
-      : img
-        ? `<img class="item-thumb" src="${img}" alt="" onclick="openImgPopup('rest',${r.id},'${r.name.replace(/'/g,"\\'")}')" style="cursor:pointer">`
-        : `<div class="item-thumb-placeholder" onclick="openImgPopup('rest',${r.id},'${r.name.replace(/'/g,"\\'")}')">
-             <div class="item-thumb-placeholder-label"><span>🍽️</span>写真</div>
-           </div>`;
+    const thumb = makeThumbHTML('rest', r.id, r.name, restImages[r.id]);
     const visitLabel = r.visitYear ? `<span style="font-size:10px;color:var(--text3);background:var(--surface2);padding:1px 6px;border-radius:10px">${r.visitYear}年${r.visitMonth?r.visitMonth+'月':''}</span>` : '';
     return `<div class="item-card" style="--panel-c:var(--rest)">
       <div class="card-actions">
@@ -1744,6 +1845,10 @@ function renderRest() {
       </div>
     </div>`;
   }).join('');
+
+  // 描画後に遅延ロード Observer を登録
+  requestAnimationFrame(observeAllLazyImgs);
+
   const chainCount = restaurants.filter(r => r.isChain).length;
   document.getElementById('rest-meta').textContent = `全 ${restaurants.length} 店舗　|　チェーン店 ${chainCount} 店`;
   document.getElementById('cnt-rest').textContent = restaurants.length;
@@ -1799,7 +1904,6 @@ window.saveRest = async function() {
   const visitYear = parseInt(document.getElementById('r-year').value) || null;
   const visitMonth = parseInt(document.getElementById('r-month').value) || null;
   let restData;
-  const isNew = !editingRestId;
   if (editingRestId) {
     const r = restaurants.find(x => x.id === editingRestId);
     if (r) { r.name = name; r.tags = [...restModalTags]; r.isChain = isChainOn; r.chainName = chainName; r.memo = memo; r.visitYear = visitYear; r.visitMonth = visitMonth; restData = r; }
