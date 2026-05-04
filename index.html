@@ -188,7 +188,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 .form-select:focus { border-color: var(--focus-c, var(--movie)); }
 
 /* CHAIN FILTER */
-/* ① スポット種別フィルター：スマホで一行に収まるよう flex-wrap: nowrap + overflow-x: auto */
 .rest-filter-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
 .rest-filter-btn { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
 .rest-filter-btn:hover { border-color: var(--rest); color: var(--rest); }
@@ -223,14 +222,13 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 .pref-tooltip { position: fixed; background: #2a2520; color: #fff; padding: 5px 11px; border-radius: 6px; font-size: 12px; font-weight: 700; pointer-events: none; z-index: 500; display: none; }
 .pref-tooltip.show { display: block; }
 
-/* PLACE FILTER — ① 種別フィルターをスマホで一行スクロール対応 */
+/* PLACE FILTER */
 .place-filter-wrap { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
 .place-filter-btn { padding: 4px 10px; border-radius: 20px; font-size: 12px; border: 1.5px solid var(--border); cursor: pointer; background: var(--white); color: var(--text2); transition: all 0.15s; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; font-weight: 500; }
 .place-filter-btn:hover { border-color: var(--place); color: var(--place); }
 .place-filter-btn.active { background: var(--place); border-color: var(--place); color: #fff; font-weight: 700; }
 .place-filter-btn.chain-active { background: var(--chain); border-color: var(--chain); color: #fff; font-weight: 700; }
 
-/* ① スポット種別フィルター行をスマホで横スクロール・折り返しなし */
 .place-kind-filter-wrap {
   display: flex;
   gap: 5px;
@@ -277,7 +275,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   .item-grid-2col .item-card.actions-open .card-actions { opacity: 1; }
 }
 
-/* ④ IMAGE POPUP MODAL */
+/* IMAGE POPUP MODAL */
 .img-popup-overlay {
   display: none;
   position: fixed;
@@ -338,7 +336,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 </head>
 <body>
 
-<!-- ==================== LOADING SCREEN ==================== -->
 <div id="loading-screen">
   <div class="loading-logo">🎬 思い出メモ</div>
   <div class="loading-spinner"></div>
@@ -346,14 +343,10 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 </div>
 
 <div class="pref-tooltip" id="pref-tooltip"></div>
-
-<!-- LAST UPDATED BAR -->
 <div id="last-updated-bar">最終更新：<span id="last-updated-text">—</span></div>
-
-<!-- SAVE STATUS TOAST -->
 <div id="save-status"></div>
 
-<!-- ④ IMAGE POPUP MODAL -->
+<!-- IMAGE POPUP MODAL -->
 <div class="img-popup-overlay" id="img-popup-overlay" onclick="closeImgPopupOnBg(event)">
   <div class="img-popup-name" id="img-popup-name"></div>
   <div id="img-popup-content"></div>
@@ -386,7 +379,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 
 <main>
 
-<!-- MOVIES (unified with subtabs) -->
+<!-- MOVIES -->
 <section id="movies-panel" class="panel active" style="--panel-c: var(--movie)">
   <div class="page-header">
     <div>
@@ -398,8 +391,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     </div>
     <button class="add-btn" onclick="openMovieModal()">＋ 追加</button>
   </div>
-
-  <!-- サブタブ -->
   <div class="movie-subtab-wrap">
     <button class="movie-subtab active" data-sub="movies" onclick="switchMovieSub(this)">
       🎬 映画 <span class="movie-subtab-badge" id="cnt-movies">0</span>
@@ -408,8 +399,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
       📺 シリーズ <span class="movie-subtab-badge" id="cnt-series">0</span>
     </button>
   </div>
-
-  <!-- 映画サブパネル -->
   <div id="sub-movies" class="movie-subpanel">
     <div class="toolbar" style="margin-top:12px;--panel-c:var(--movie)">
       <select class="sort-sel" id="movie-sort">
@@ -431,8 +420,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <div class="page-meta" id="movie-meta" style="margin-bottom:10px;font-size:12px;color:var(--text2)"></div>
     <div class="cards-grid" id="movies-grid"></div>
   </div>
-
-  <!-- シリーズサブパネル -->
   <div id="sub-series" class="movie-subpanel" style="display:none">
     <div class="toolbar" style="margin-top:12px;--panel-c:var(--movie)">
       <select class="sort-sel" id="series-sort">
@@ -466,7 +453,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     <button class="add-btn place-btn" onclick="openPlaceModal()">＋ スポットを追加</button>
   </div>
   <div class="toolbar" style="--panel-c:var(--place)">
-    <!-- ② 追加順を削除 -->
     <select class="sort-sel" id="place-sort">
       <option value="name">名前順</option>
       <option value="pref">都道府県順</option>
@@ -478,7 +464,6 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
     </div>
   </div>
   <div class="place-filter-wrap" id="place-pref-filters"></div>
-  <!-- ① 種別フィルターを横スクロール1行に -->
   <div class="place-kind-filter-wrap" id="place-chain-filters">
     <span class="tag-filter-label">種別：</span>
     <button class="place-filter-btn active" data-cf="all" onclick="setPlaceChainFilter(this)">すべて</button>
@@ -552,7 +537,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
 
 </main>
 
-<!-- ==================== MOVIE MODAL ==================== -->
+<!-- MOVIE MODAL -->
 <div class="modal-overlay" id="movie-modal" onclick="closeModalOnBg(event,'movie-modal')" style="--modal-save-c: var(--movie); --focus-c: var(--movie)">
   <div class="modal">
     <div class="modal-title" id="movie-modal-title">🎬 映画を追加</div>
@@ -599,7 +584,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   </div>
 </div>
 
-<!-- ==================== PLACE MODAL ==================== -->
+<!-- PLACE MODAL -->
 <div class="modal-overlay" id="place-modal" onclick="closeModalOnBg(event,'place-modal')" style="--modal-save-c: var(--place); --focus-c: var(--place)">
   <div class="modal">
     <div class="modal-title" id="place-modal-title">📍 スポットを追加</div>
@@ -646,7 +631,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   </div>
 </div>
 
-<!-- ==================== REST MODAL ==================== -->
+<!-- REST MODAL -->
 <div class="modal-overlay" id="rest-modal" onclick="closeModalOnBg(event,'rest-modal')" style="--modal-save-c: var(--rest); --focus-c: var(--rest)">
   <div class="modal">
     <div class="modal-title" id="rest-modal-title">🍽️ 飲食店を追加</div>
@@ -698,7 +683,7 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   </div>
 </div>
 
-<!-- ==================== DELETE CONFIRM MODAL ==================== -->
+<!-- DELETE CONFIRM MODAL -->
 <div class="modal-overlay" id="del-modal" onclick="closeModalOnBg(event,'del-modal')">
   <div class="modal" style="max-width:360px">
     <div class="modal-title">🗑️ 削除の確認</div>
@@ -710,11 +695,9 @@ select.sort-sel { padding: 9px 12px; border-radius: 8px; border: 1.5px solid var
   </div>
 </div>
 
-<!-- hidden file inputs for image upload -->
 <input type="file" class="img-file-input" id="place-img-input" accept="image/*" onchange="handleImgUpload(event,'place')">
 <input type="file" class="img-file-input" id="rest-img-input" accept="image/*" onchange="handleImgUpload(event,'rest')">
 
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
@@ -748,7 +731,6 @@ const ALL_REGIONS = [
   {r:"九州・沖縄", p:["福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"]}
 ];
 
-// ──────────────── Firebase config (hardcoded) ────────────────
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAAeT9zLfPL91LV6Uykl4vdx9fCny3AGBE",
   authDomain: "database-tkfamily0606.firebaseapp.com",
@@ -916,8 +898,16 @@ async function initAndLoad() {
     ls.querySelector('.loading-msg').style.color = '#dc2626';
     return;
   }
+
+  // ローディング画面を消してUIを表示
   ls.style.display = 'none';
+
+  // データが揃ったら即座にUIを初期化・表示
   await initApp();
+
+  // ★ 画像ロードはUI表示後に非同期で実行（ノンブロッキング）
+  // これによりUIが先に表示され、画像は後からカードに反映される
+  loadAllImagesAsync();
 }
 
 async function loadFirestoreData() {
@@ -941,7 +931,7 @@ async function loadFirestoreData() {
     nextPlaceId = places.length + 1;
     for (const p of places) await fsSet('places', p.id, { id: p.id, name: p.name, pref: p.pref, isChain: false, chainName: '', memo: p.memo, visitYear: null, visitMonth: null, addedAt: p.addedAt });
   }
-  // restaurants — ③ addedAt を数値で正しく読み込む
+  // restaurants
   const restData = await fsGet('restaurants');
   if (restData && restData.length > 0) {
     restaurants = restData.map(d => ({
@@ -962,12 +952,47 @@ async function loadFirestoreData() {
     for (const r of restaurants) await fsSet('restaurants', r.id, { id: r.id, name: r.name, tags: r.tags, isChain: r.isChain, chainName: r.chainName, memo: r.memo, visitYear: null, visitMonth: null, addedAt: r.addedAt });
   }
   // prefs
-  const prefsDoc = await (async () => { try { const d = await getDoc(doc(db, 'settings', 'prefs')); return d.exists() ? d.data() : null; } catch(e) { return null; } })();
+  const prefsDoc = await (async () => {
+    try { const d = await getDoc(doc(db, 'settings', 'prefs')); return d.exists() ? d.data() : null; }
+    catch(e) { return null; }
+  })();
   if (prefsDoc && prefsDoc.visited) {
     visitedPrefs = new Set(prefsDoc.visited);
   } else {
     visitedPrefs = getDefaultPrefs();
     await fsSet('settings', 'prefs', { visited: [...visitedPrefs] });
+  }
+}
+
+// ★ 修正箇所①: 画像をノンブロッキングで並列ロード
+// 各アイテムのURLを取得したら即座にカードを更新する（全部揃うまで待たない）
+async function loadAllImagesAsync() {
+  if (!storage) return;
+
+  const tasks = [
+    ...places.map(p => ({ type: 'place', id: p.id })),
+    ...restaurants.map(r => ({ type: 'rest', id: r.id }))
+  ];
+
+  // バッチサイズを制限して同時リクエスト数を抑える
+  const BATCH_SIZE = 10;
+  for (let i = 0; i < tasks.length; i += BATCH_SIZE) {
+    const batch = tasks.slice(i, i + BATCH_SIZE);
+    await Promise.allSettled(batch.map(async ({ type, id }) => {
+      try {
+        const url = await getDownloadURL(storageRef(storage, imgStoragePath(type, id)));
+        if (type === 'place') {
+          placeImages[id] = url;
+        } else {
+          restImages[id] = url;
+        }
+      } catch(e) {
+        // 画像なし = 正常（not-found エラーを無視）
+      }
+    }));
+    // バッチ完了ごとにUIを更新（画像が順次表示される）
+    renderPlaces();
+    renderRest();
   }
 }
 
@@ -1025,7 +1050,7 @@ async function initApp() {
     if (el) { el.addEventListener('change', fn); el.addEventListener('input', fn); }
   });
 
-  await loadAllImages();
+  // ★ 修正箇所②: 画像ロードを待たずにUIを即座に描画
   renderTagFilters();
   renderMovies();
   renderSeries();
@@ -1105,7 +1130,9 @@ window.confirmDelete = async function() {
   closeDelModal();
 };
 
-window.closeModalOnBg = function(e, id) { if (e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open'); };
+window.closeModalOnBg = function(e, id) {
+  if (e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open');
+};
 
 // ──────────────── Movies ────────────────
 const POPULAR_TAGS = ['ホラー','サスペンス','SF','邦画','洋画','韓国映画','アクション','ヒューマン','コメディ','アニメ'];
@@ -1368,6 +1395,7 @@ window.handleImgUpload = async function(e, type) {
   const targetId = pendingImgTarget.id;
   e.target.value = '';
   pendingImgTarget = null;
+  // アップロード中表示
   if (type === 'place') { placeImages[targetId] = '__loading__'; renderPlaces(); }
   else { restImages[targetId] = '__loading__'; renderRest(); }
   try {
@@ -1386,8 +1414,8 @@ window.handleImgUpload = async function(e, type) {
   }
 };
 
-// ④ 画像ポップアップ
-let imgPopupTarget = null; // { type: 'place'|'rest', id, name }
+// ── 画像ポップアップ ──
+let imgPopupTarget = null;
 
 window.openImgPopup = function(type, id, name) {
   imgPopupTarget = { type, id, name };
@@ -1398,7 +1426,6 @@ window.openImgPopup = function(type, id, name) {
   nameEl.textContent = name;
   const imgUrl = type === 'place' ? placeImages[id] : restImages[id];
   if (imgUrl && imgUrl !== '__loading__') {
-    // 画像あり → 表示 + 変更・削除ボタン
     contentEl.innerHTML = `<img class="img-popup-img" src="${imgUrl}" alt="${name}">`;
     btnsEl.innerHTML = `
       <button class="img-popup-btn change" onclick="triggerImgUploadFromPopup()">📷 変更</button>
@@ -1406,7 +1433,6 @@ window.openImgPopup = function(type, id, name) {
       <button class="img-popup-btn close" onclick="closeImgPopup()">閉じる</button>
     `;
   } else {
-    // 画像なし → アップロード促進
     const icon = type === 'place' ? '📍' : '🍽️';
     contentEl.innerHTML = `
       <div class="img-popup-placeholder">
@@ -1454,7 +1480,6 @@ window.deleteImgFromPopup = async function() {
 };
 
 window.triggerImgUpload = function(type, id) {
-  // カードからの直接タップはポップアップへ委譲
   const name = type === 'place'
     ? (places.find(p => p.id === id) || {}).name || ''
     : (restaurants.find(r => r.id === id) || {}).name || '';
@@ -1464,24 +1489,8 @@ window.triggerImgUpload = function(type, id) {
 async function deleteImg(type, id) {
   if (!storage) return;
   try {
-    const sRef = storageRef(storage, imgStoragePath(type, id));
-    await deleteObject(sRef);
+    await deleteObject(storageRef(storage, imgStoragePath(type, id)));
   } catch(e) { /* ファイルが存在しない場合は無視 */ }
-}
-
-async function loadAllImages() {
-  if (!storage) return;
-  const all = [
-    ...places.map(p => ({ type: 'place', id: p.id })),
-    ...restaurants.map(r => ({ type: 'rest', id: r.id }))
-  ];
-  await Promise.all(all.map(async ({ type, id }) => {
-    try {
-      const url = await getDownloadURL(storageRef(storage, imgStoragePath(type, id)));
-      if (type === 'place') placeImages[id] = url;
-      else restImages[id] = url;
-    } catch(e) { /* 画像なし */ }
-  }));
 }
 
 // ──────────────── Places ────────────────
@@ -1534,7 +1543,6 @@ function renderPlaces() {
     const matchChain = activePlaceChainFilter === 'all' || (activePlaceChainFilter === 'chain' && p.isChain) || (activePlaceChainFilter === 'local' && !p.isChain);
     return matchPref && matchYear && matchChain;
   });
-  // ② 追加順削除 → name / pref / visited のみ
   if (sortVal === 'pref') list = [...list].sort((a,b) => {
     const ai = ALL_PREFS.indexOf(a.pref), bi = ALL_PREFS.indexOf(b.pref);
     if (ai < 0 && bi < 0) return 0; if (ai < 0) return 1; if (bi < 0) return -1;
@@ -1545,7 +1553,7 @@ function renderPlaces() {
     const by2 = (b.visitYear||0)*100+(b.visitMonth||0);
     return by2 - ay;
   });
-  else list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja')); // name or fallback
+  else list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
   if (dir === 'desc') list = [...list].reverse();
 
   const grid = document.getElementById('places-grid');
@@ -1646,12 +1654,6 @@ window.savePlace = async function() {
   }
   if (placeData) {
     await fsSet('places', placeData.id, { id: placeData.id, name: placeData.name, pref: placeData.pref, isChain: placeData.isChain, chainName: placeData.chainName, memo: placeData.memo, visitYear: placeData.visitYear||null, visitMonth: placeData.visitMonth||null, addedAt: placeData.addedAt });
-    if (!editingPlaceId) {
-      try {
-        const url = await getDownloadURL(storageRef(storage, imgStoragePath('place', placeData.id)));
-        placeImages[placeData.id] = url;
-      } catch(e) { /* 画像なし */ }
-    }
   }
   closePlaceModal(); renderPlacePrefFilters(); renderPlaces();
 };
@@ -1688,7 +1690,6 @@ window.setRestYearFilter = function(btn) {
   renderRestYearFilters(); renderRest();
 };
 
-// ③ 飲食店の追加順ソート修正: addedAt の数値比較を確実に
 function renderRest() {
   const sortVal = document.getElementById('rest-sort').value;
   const dir = sortDir.rest;
@@ -1706,7 +1707,6 @@ function renderRest() {
       return at.localeCompare(bt,'ja') || a.name.localeCompare(b.name,'ja');
     });
   } else {
-    // name (default)
     list = [...list].sort((a,b) => a.name.localeCompare(b.name,'ja'));
   }
   if (dir === 'desc') list = [...list].reverse();
@@ -1809,12 +1809,6 @@ window.saveRest = async function() {
   }
   if (restData) {
     await fsSet('restaurants', restData.id, { id: restData.id, name: restData.name, tags: restData.tags, isChain: restData.isChain, chainName: restData.chainName, memo: restData.memo, visitYear: restData.visitYear||null, visitMonth: restData.visitMonth||null, addedAt: restData.addedAt });
-    if (isNew) {
-      try {
-        const url = await getDownloadURL(storageRef(storage, imgStoragePath('rest', restData.id)));
-        restImages[restData.id] = url;
-      } catch(e) { /* 画像なし */ }
-    }
   }
   closeRestModal(); renderRest();
 };
