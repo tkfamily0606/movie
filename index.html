@@ -1097,7 +1097,7 @@ async function initApp() {
 function populateYearSelects() {
   const currentYear = new Date().getFullYear();
   const years = [];
-  for (let y = currentYear; y >= 2010; y--) years.push(y);
+  for (let y = currentYear; y >= 2021; y--) years.push(y);
   ['p-year','r-year'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
@@ -1718,7 +1718,7 @@ function populateYearSelect(selId, val) {
   if (!sel) return;
   const currentYear = new Date().getFullYear();
   const years = [];
-  for (let y = currentYear; y >= 2010; y--) years.push(y);
+  for (let y = currentYear; y >= 2021; y--) years.push(y);
   sel.innerHTML = `<option value="">年</option>` + years.map(y => `<option value="${y}"${y==val?' selected':''}>${y}年</option>`).join('');
 }
 window.openPlaceModal = function(edit) {
