@@ -966,17 +966,20 @@ async function prefetchImageUrls() {
     ...restaurants.map(r => ({ type: 'rest', id: r.id }))
   ];
   const BATCH = 8;
+  let needRerenderPlace = false;
+  let needRerenderRest = false;
   for (let i = 0; i < tasks.length; i += BATCH) {
     const batch = tasks.slice(i, i + BATCH);
     await Promise.allSettled(batch.map(async ({ type, id }) => {
       try {
         const url = await getDownloadURL(storageRef(storage, imgStoragePath(type, id)));
-        if (type === 'place') placeImages[id] = url;
-        else restImages[id] = url;
-        // URLが取れたカードの data-src を実際の src に差し替え（遅延ロードと連携）
-        applyImageUrl(type, id, url);
+        if (type === 'place') { placeImages[id] = url; needRerenderPlace = true; }
+        else { restImages[id] = url; needRerenderRest = true; }
       } catch(e) { /* 画像なし = 正常 */ }
     }));
+    // バッチ完了ごとに再描画（URLが入ったカードを即時反映）
+    if (needRerenderPlace) { renderPlaces(); needRerenderPlace = false; }
+    if (needRerenderRest) { renderRest(); needRerenderRest = false; }
   }
 }
 
